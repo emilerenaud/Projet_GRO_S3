@@ -28,6 +28,8 @@ VexQuadEncoder vexEncoder_;         // objet encodeur vex
 IMU9DOF imu_;                       // objet imu
 PID pid_;                           // objet PID
 
+enum etats{ReculLimitSwitch, PrendreObjet, AtteindreHauteur, TraverserObstacle, StabiliserObjet, LacherObjet, Retour}; // machine a etats
+
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
@@ -113,6 +115,39 @@ void loop() {
   
   // mise à jour du PID
   pid_.run();
+
+  etats etat = ReculLimitSwitch;
+
+  switch (etat)
+  {
+    case ReculLimitSwitch:
+      /* code */
+      break;
+
+    case PrendreObjet:
+      /* code */
+      break;
+
+    case AtteindreHauteur:
+      /* code */
+      break;
+
+    case TraverserObstacle:
+      /* code */
+      break;
+
+    case StabiliserObjet:
+      /* code */
+      break;
+
+    case LacherObjet:
+      /* code */
+      break;
+
+    case Retour:
+      /* code */
+      break;
+  }
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
