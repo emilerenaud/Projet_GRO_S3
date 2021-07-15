@@ -9,6 +9,8 @@
 #include <LibS3GRO.h>
 #include <ArduinoJson.h>
 #include <libExample.h> // Vos propres librairies
+#include <EEPROM.h>
+
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD            115200      // Frequence de transmission serielle
@@ -44,6 +46,12 @@ float Axyz[3];                      // tableau pour accelerometre
 float Gxyz[3];                      // tableau pour giroscope
 float Mxyz[3];                      // tableau pour magnetometre
 
+int eeAdresse = 0;
+int sizeFloat = sizeof(float);
+float kp_EEPROM = 0.25;
+float ki_EEPROM = 0.1;
+float kd_EEPROM = 0;
+
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -58,10 +66,9 @@ double PIDmeasurement();
 void PIDcommand(double cmd);
 void PIDgoalReached();
 
-// Fonctions de tests
-void test_moteur(void);
-int potValue = 0;
-int counterPulse = 0;
+// Fonctions
+void updateEEPROM(void);
+
 /*---------------------------- fonctions "Main" -----------------------------*/
 
 void setup() {
@@ -80,18 +87,25 @@ void setup() {
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
   
+  // EEPROM
+  EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
+  EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
+  EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
   // Initialisation du PID
-  pid_.setGains(0.25,0.1 ,0);
+  pid_.setGains(kp_EEPROM, ki_EEPROM , kd_EEPROM);
   // Attache des fonctions de retour
   pid_.setMeasurementFunc(PIDmeasurement);
   pid_.setCommandFunc(PIDcommand);
   pid_.setAtGoalFunc(PIDgoalReached);
   pid_.setEpsilon(0.001);
   pid_.setPeriod(200);
+
 }
 
 /* Boucle principale (infinie)*/
 void loop() {
+
+  AX_.setMotorPWM(0,-1);
 
   if(shouldRead_)
   {
@@ -104,7 +118,6 @@ void loop() {
   if(shouldPulse_)
   {
     startPulse();
-    test_moteur();
   }
 
   // mise a jour des chronometres
@@ -208,6 +221,21 @@ void readMsg(){
   parse_msg = doc["setGoal"];
   if(!parse_msg.isNull()){
     pid_.disable();
+    if(doc["setGoal"][0] != kp_EEPROM)
+    {
+      kp_EEPROM = doc["setGoal"][0];
+      EEPROM.put(eeAdresse + (sizeFloat * 0), kp_EEPROM);
+    }
+    if(doc["setGoal"][1] != ki_EEPROM)
+    {
+      ki_EEPROM = doc["setGoal"][0];
+      EEPROM.put(eeAdresse + (sizeFloat * 1), ki_EEPROM);
+    }
+    if(doc["setGoal"][2] != kd_EEPROM)
+    {
+      kd_EEPROM = doc["setGoal"][0];
+      EEPROM.put(eeAdresse + (sizeFloat * 2), kd_EEPROM);
+    }
     pid_.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
     pid_.setEpsilon(doc["setGoal"][3]);
     pid_.setGoal(doc["setGoal"][4]);
@@ -227,11 +255,4 @@ void PIDgoalReached(){
   // To do
 }
 
-void test_moteur()
-{
-  counterPulse = vexEncoder_.getCount(); // encoder ou pot ??
-  potValue = analogRead(POTPIN);
-  Serial.println("Encoder = " + String(counterPulse) + "  Pot = " + String(potValue));
 
-
-}
