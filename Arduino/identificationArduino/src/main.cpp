@@ -72,7 +72,8 @@ void readMsg();
 void serialEvent();
 
 // Fonctions pour le PID
-double PIDmeasurement();
+double PIDmeasurement_lineaire();
+double PIDmeasurement_pendule();
 void PIDcommand(double cmd);
 void PIDgoalReached();
 
@@ -140,7 +141,7 @@ void loop()
       // Initialisation du PID
       pid_.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
       // Attache des fonctions de retour
-      pid_.setMeasurementFunc(PIDmeasurement);
+      pid_.setMeasurementFunc(PIDmeasurement_lineaire);
       pid_.setCommandFunc(PIDcommand);
       pid_.setAtGoalFunc(PIDgoalReached);
       pid_.setEpsilon(0.001);
@@ -218,7 +219,7 @@ void sendMsg()
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_.getGoal();
-  doc["measurements"] = PIDmeasurement();
+  doc["measurements"] = PIDmeasurement_lineaire();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent();
   doc["pulsePWM"] = pulsePWM_;
@@ -304,15 +305,16 @@ void readMsg()
 }
 
 // Fonctions pour le PID
-double PIDmeasurement(){
-
-  double Potpin=analogRead(POTPIN);
-  double counterPulse=vexEncoder_.getCount();
-  double angle=map(Potpin, 0,1023,-145,145);
-
-  double distance;
-  distance= (0.01*PI*counterPulse)/3200; 
+double PIDmeasurement_lineaire()
+{
+  return (0.01*PI*AX_.readEncoder(1))/3200; 
 }
+double PIDmeasurement_pendule()
+{
+  return map(analogRead(POTPIN), 0,1023,-145,145);
+}
+
+
 void PIDcommand(double cmd)
 {
   if(cmd > 1)
