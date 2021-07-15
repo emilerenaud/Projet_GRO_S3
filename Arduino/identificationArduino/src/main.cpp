@@ -28,7 +28,8 @@ ArduinoX AX_;               // objet arduinoX
 MegaServo servo_;           // objet servomoteur
 VexQuadEncoder vexEncoder_; // objet encodeur vex
 IMU9DOF imu_;               // objet imu
-PID pid_;                   // objet PID
+PID pid_1;                  // objet PID pour le moteur
+PID pid_2;                  // objet PID pour le pendule
 
 enum etats
 {
@@ -39,7 +40,7 @@ enum etats
   StabiliserObjet,
   LacherObjet,
   Retour
-}; // machine a etats
+} etat; // machine a etats
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -61,6 +62,7 @@ int sizeFloat = sizeof(float);
 float kp_EEPROM = 0.25;
 float ki_EEPROM = 0.1;
 float kd_EEPROM = 0;
+bool first_scan = true;
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -74,8 +76,10 @@ void serialEvent();
 // Fonctions pour le PID
 double PIDmeasurement_lineaire();
 double PIDmeasurement_pendule();
-void PIDcommand(double cmd);
-void PIDgoalReached();
+void PIDcommand_motor(double cmd);
+void PIDcommand_pendule(double cmd);
+void PIDgoalReached_motor();
+void PIDgoalReached_pendule();
 
 // Fonctions
 
@@ -105,12 +109,34 @@ void setup()
   EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
   EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
   EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
+
+  etat = ReculLimitSwitch;
+
+  // PID
+// Initialisation du PID
+    pid_1.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
+    // Attache des fonctions de retour
+    pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
+    pid_1.setCommandFunc(PIDcommand_motor);
+    pid_1.setAtGoalFunc(PIDgoalReached_motor);
+    pid_1.setEpsilon(0.001);
+    pid_1.setPeriod(100);
+    // pid_1.setIntegralLim(1);
+
+    pid_2.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
+    // Attache des fonctions de retour
+    pid_2.setMeasurementFunc(PIDmeasurement_pendule);
+    pid_2.setCommandFunc(PIDcommand_pendule);
+    pid_2.setAtGoalFunc(PIDgoalReached_pendule);
+    pid_2.setEpsilon(0.001);
+    pid_2.setPeriod(100);
+    //pid_2.setIntegralLim(1);
 }
 
 /* Boucle principale (infinie)*/
 void loop()
 {
-  bool first_scan = true;
+  
 
   if (shouldRead_)
   {
@@ -130,27 +156,20 @@ void loop()
   timerPulse_.update();
 
   // mise à jour du PID
-  pid_.run();
-  etats etat = ReculLimitSwitch;
+  pid_1.run();
+  pid_1.setGoal(1);
+  pid_2.disable();
+  
 
   switch (etat)
   {
   case ReculLimitSwitch:
     if (first_scan)
     {
-      // Initialisation du PID
-      pid_.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
-      // Attache des fonctions de retour
-      pid_.setMeasurementFunc(PIDmeasurement_lineaire);
-      pid_.setCommandFunc(PIDcommand);
-      pid_.setAtGoalFunc(PIDgoalReached);
-      pid_.setEpsilon(0.001);
-      pid_.setPeriod(100);
-      pid_.setGoal(1);
-      pid_.setIntegralLim(1);
+      pid_1.setGoal(1);
       first_scan = false;
     }
-    pid_.run();
+    // pid_1.run();    // peut-etre pas necessaire.
 
     break;
 
@@ -168,6 +187,8 @@ void loop()
 
   case StabiliserObjet:
     /* code */
+    pid_1.disable();
+    pid_2.setGoal(0);
     break;
 
   case LacherObjet:
@@ -210,7 +231,7 @@ void endPulse()
 
 void sendMsg()
 {
-  Serial.println("Send MSG");
+  //Serial.println("Send MSG");
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
   // Elements du message
@@ -218,7 +239,7 @@ void sendMsg()
   doc["time"] = millis();
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"] = pid_.getGoal();
+  doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent();
@@ -231,13 +252,13 @@ void sendMsg()
   doc["gyroX"] = imu_.getGyroX();
   doc["gyroY"] = imu_.getGyroY();
   doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = pid_.isAtGoal();
-  doc["actualTime"] = pid_.getActualDt();
+  doc["isGoal"] = pid_1.isAtGoal();
+  doc["actualTime"] = pid_1.getActualDt();
 
   // Serialisation
-  serializeJson(doc, Serial);
+  //serializeJson(doc, Serial);
   // Envoit
-  Serial.println();
+  //Serial.println();
   shouldSend_ = false;
 }
 
@@ -281,7 +302,7 @@ void readMsg()
   parse_msg = doc["setGoal"];
   if (!parse_msg.isNull())
   {
-    pid_.disable();
+    pid_1.disable();
     if (doc["setGoal"][0] != kp_EEPROM)
     {
       kp_EEPROM = doc["setGoal"][0];
@@ -297,17 +318,17 @@ void readMsg()
       kd_EEPROM = doc["setGoal"][0];
       EEPROM.put(eeAdresse + (sizeFloat * 2), kd_EEPROM);
     }
-    pid_.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
-    pid_.setEpsilon(doc["setGoal"][3]);
-    pid_.setGoal(doc["setGoal"][4]);
-    pid_.enable();
+    pid_1.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
+    pid_1.setEpsilon(doc["setGoal"][3]);
+    pid_1.setGoal(doc["setGoal"][4]);
+    pid_1.enable();
   }
 }
 
 // Fonctions pour le PID
 double PIDmeasurement_lineaire()
 {
-  return (0.01*PI*AX_.readEncoder(1))/3200; 
+  return (0.01*PI*AX_.readEncoder(0))/3200; // encoder 0
 }
 double PIDmeasurement_pendule()
 {
@@ -315,7 +336,7 @@ double PIDmeasurement_pendule()
 }
 
 
-void PIDcommand(double cmd)
+void PIDcommand_motor(double cmd)
 {
   if(cmd > 1)
   {
@@ -325,10 +346,25 @@ void PIDcommand(double cmd)
   {
     cmd = -1;
   }
-
+  Serial.print("FUCK");
+  Serial.println(cmd);
   AX_.setMotorPWM(0, cmd);
 }
-void PIDgoalReached()
+
+void PIDcommand_pendule(double cmd)
+{
+  
+}
+
+void PIDgoalReached_motor()
+{
+  AX_.setMotorPWM(0,0);
+  pid_1.disable();
+}
+
+void PIDgoalReached_pendule()
 {
   // To do
 }
+
+
