@@ -13,40 +13,48 @@
 
 /*------------------------------ Constantes ---------------------------------*/
 
-#define BAUD            115200      // Frequence de transmission serielle
-#define UPDATE_PERIODE  100         // Periode (ms) d'envoie d'etat general
+#define BAUD 115200        // Frequence de transmission serielle
+#define UPDATE_PERIODE 100 // Periode (ms) d'envoie d'etat general
 
-#define MAGPIN          32          // Port numerique pour electroaimant
-#define POTPIN          A5          // Port analogique pour le potentiometre
+#define MAGPIN 32 // Port numerique pour electroaimant
+#define POTPIN A5 // Port analogique pour le potentiometre
 
-#define PASPARTOUR      64          // Nombre de pas par tour du moteur
-#define RAPPORTVITESSE  50          // Rapport de vitesse du moteur
+#define PASPARTOUR 64     // Nombre de pas par tour du moteur
+#define RAPPORTVITESSE 50 // Rapport de vitesse du moteur
 
 /*---------------------------- variables globales ---------------------------*/
 
-ArduinoX AX_;                       // objet arduinoX
-MegaServo servo_;                   // objet servomoteur
-VexQuadEncoder vexEncoder_;         // objet encodeur vex
-IMU9DOF imu_;                       // objet imu
-PID pid_;                           // objet PID
+ArduinoX AX_;               // objet arduinoX
+MegaServo servo_;           // objet servomoteur
+VexQuadEncoder vexEncoder_; // objet encodeur vex
+IMU9DOF imu_;               // objet imu
+PID pid_;                   // objet PID
 
-enum etats{ReculLimitSwitch, PrendreObjet, AtteindreHauteur, TraverserObstacle, StabiliserObjet, LacherObjet, Retour}; // machine a etats
+enum etats
+{
+  ReculLimitSwitch,
+  PrendreObjet,
+  AtteindreHauteur,
+  TraverserObstacle,
+  StabiliserObjet,
+  LacherObjet,
+  Retour
+}; // machine a etats
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
 volatile bool isInPulse_ = false;   // drapeau pour effectuer un pulse
 
-SoftTimer timerSendMsg_;            // chronometre d'envoie de messages
-SoftTimer timerPulse_;              // chronometre pour la duree d'un pulse
+SoftTimer timerSendMsg_; // chronometre d'envoie de messages
+SoftTimer timerPulse_;   // chronometre pour la duree d'un pulse
 
-uint16_t pulseTime_ = 0;            // temps dun pulse en ms
-float pulsePWM_ = 0;                // Amplitude de la tension au moteur [-1,1]
+uint16_t pulseTime_ = 0; // temps dun pulse en ms
+float pulsePWM_ = 0;     // Amplitude de la tension au moteur [-1,1]
 
-
-float Axyz[3];                      // tableau pour accelerometre
-float Gxyz[3];                      // tableau pour giroscope
-float Mxyz[3];                      // tableau pour magnetometre
+float Axyz[3]; // tableau pour accelerometre
+float Gxyz[3]; // tableau pour giroscope
+float Mxyz[3]; // tableau pour magnetometre
 
 int eeAdresse = 0;
 int sizeFloat = sizeof(float);
@@ -59,7 +67,7 @@ float kd_EEPROM = 0;
 void timerCallback();
 void startPulse();
 void endPulse();
-void sendMsg(); 
+void sendMsg();
 void readMsg();
 void serialEvent();
 
@@ -72,14 +80,18 @@ void PIDgoalReached();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
-void setup() {
-  Serial.begin(BAUD);               // initialisation de la communication serielle
-  AX_.init();                       // initialisation de la carte ArduinoX 
-  imu_.init();                      // initialisation de la centrale inertielle
-  vexEncoder_.init(2,3);            // initialisation de l'encodeur VEX
+void setup()
+{
+  Serial.begin(BAUD);     // initialisation de la communication serielle
+  AX_.init();             // initialisation de la carte ArduinoX
+  imu_.init();            // initialisation de la centrale inertielle
+  vexEncoder_.init(2, 3); // initialisation de l'encodeur VEX
   // attache de l'interruption pour encodeur vex
-  attachInterrupt(vexEncoder_.getPinInt(), []{vexEncoder_.isr();}, FALLING);
-  
+  attachInterrupt(
+      vexEncoder_.getPinInt(), []
+      { vexEncoder_.isr(); },
+      FALLING);
+
   // Chronometre envoie message
   timerSendMsg_.setDelay(UPDATE_PERIODE);
   timerSendMsg_.setCallback(timerCallback);
@@ -87,36 +99,27 @@ void setup() {
 
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
-  
+
   // EEPROM
   EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
   EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
   EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
-  // Initialisation du PID
-  pid_.setGains(kp_EEPROM, ki_EEPROM , kd_EEPROM);
-  // Attache des fonctions de retour
-  pid_.setMeasurementFunc(PIDmeasurement);
-  pid_.setCommandFunc(PIDcommand);
-  pid_.setAtGoalFunc(PIDgoalReached);
-  pid_.setEpsilon(0.001);
-  pid_.setPeriod(200);
-
 }
 
 /* Boucle principale (infinie)*/
-void loop() {
+void loop()
+{
+  bool first_scan = true;
 
-  AX_.setMotorPWM(0,-1);
-
-  if(shouldRead_)
+  if (shouldRead_)
   {
     readMsg();
   }
-  if(shouldSend_)
+  if (shouldSend_)
   {
     sendMsg();
   }
-  if(shouldPulse_)
+  if (shouldPulse_)
   {
     startPulse();
   }
@@ -124,50 +127,66 @@ void loop() {
   // mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
-  
+
   // mise à jour du PID
   pid_.run();
-   etats etat = ReculLimitSwitch;
+  etats etat = ReculLimitSwitch;
 
   switch (etat)
   {
-    case ReculLimitSwitch:
-      /* code */
-      break;
+  case ReculLimitSwitch:
+    if (first_scan)
+    {
+      // Initialisation du PID
+      pid_.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
+      // Attache des fonctions de retour
+      pid_.setMeasurementFunc(PIDmeasurement);
+      pid_.setCommandFunc(PIDcommand);
+      pid_.setAtGoalFunc(PIDgoalReached);
+      pid_.setEpsilon(0.001);
+      pid_.setPeriod(100);
+      pid_.setGoal(1);
+      pid_.setIntegralLim(1);
+      first_scan = false;
+    }
+    pid_.run();
 
-    case PrendreObjet:
-      /* code */
-      break;
+    break;
 
-    case AtteindreHauteur:
-      /* code */
-      break;
+  case PrendreObjet:
+    /* code */
+    break;
 
-    case TraverserObstacle:
-      /* code */
-      break;
+  case AtteindreHauteur:
+    /* code */
+    break;
 
-    case StabiliserObjet:
-      /* code */
-      break;
+  case TraverserObstacle:
+    /* code */
+    break;
 
-    case LacherObjet:
-      /* code */
-      break;
+  case StabiliserObjet:
+    /* code */
+    break;
 
-    case Retour:
-      /* code */
-      break;
+  case LacherObjet:
+    /* code */
+    break;
+
+  case Retour:
+    /* code */
+    break;
   }
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
 
-void serialEvent(){shouldRead_ = true;}
+void serialEvent() { shouldRead_ = true; }
 
-void timerCallback(){shouldSend_ = true;}
+void timerCallback() { shouldSend_ = true; }
 
-void startPulse(){
+void startPulse()
+{
   /* Demarrage d'un pulse */
   Serial.println("Fonction Start Pulse");
   timerPulse_.setDelay(pulseTime_);
@@ -179,15 +198,17 @@ void startPulse(){
   isInPulse_ = true;
 }
 
-void endPulse(){
+void endPulse()
+{
   /* Rappel du chronometre */
-  AX_.setMotorPWM(0,0);
-  AX_.setMotorPWM(1,0);
+  AX_.setMotorPWM(0, 0);
+  AX_.setMotorPWM(1, 0);
   timerPulse_.disable();
   isInPulse_ = false;
 }
 
-void sendMsg(){
+void sendMsg()
+{
   Serial.println("Send MSG");
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
@@ -199,7 +220,7 @@ void sendMsg(){
   doc["goal"] = pid_.getGoal();
   doc["measurements"] = PIDmeasurement();
   doc["voltage"] = AX_.getVoltage();
-  doc["current"] = AX_.getCurrent(); 
+  doc["current"] = AX_.getCurrent();
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
   doc["inPulse"] = isInPulse_;
@@ -219,7 +240,8 @@ void sendMsg(){
   shouldSend_ = false;
 }
 
-void readMsg(){
+void readMsg()
+{
   Serial.println("Read MSG");
   // Lecture du message Json
   StaticJsonDocument<500> doc;
@@ -230,41 +252,46 @@ void readMsg(){
   shouldRead_ = false;
 
   // Si erreur dans le message
-  if (error) {
+  if (error)
+  {
     Serial.print("deserialize() failed: ");
     Serial.println(error.c_str());
     return;
   }
-  
+
   // Analyse des éléments du message message
   parse_msg = doc["pulsePWM"];
-  if(!parse_msg.isNull()){
-     pulsePWM_ = doc["pulsePWM"].as<float>();
+  if (!parse_msg.isNull())
+  {
+    pulsePWM_ = doc["pulsePWM"].as<float>();
   }
 
   parse_msg = doc["pulseTime"];
-  if(!parse_msg.isNull()){
-     pulseTime_ = doc["pulseTime"].as<float>();
+  if (!parse_msg.isNull())
+  {
+    pulseTime_ = doc["pulseTime"].as<float>();
   }
 
   parse_msg = doc["pulse"];
-  if(!parse_msg.isNull()){
-     shouldPulse_ = doc["pulse"];
+  if (!parse_msg.isNull())
+  {
+    shouldPulse_ = doc["pulse"];
   }
   parse_msg = doc["setGoal"];
-  if(!parse_msg.isNull()){
+  if (!parse_msg.isNull())
+  {
     pid_.disable();
-    if(doc["setGoal"][0] != kp_EEPROM)
+    if (doc["setGoal"][0] != kp_EEPROM)
     {
       kp_EEPROM = doc["setGoal"][0];
       EEPROM.put(eeAdresse + (sizeFloat * 0), kp_EEPROM);
     }
-    if(doc["setGoal"][1] != ki_EEPROM)
+    if (doc["setGoal"][1] != ki_EEPROM)
     {
       ki_EEPROM = doc["setGoal"][0];
       EEPROM.put(eeAdresse + (sizeFloat * 1), ki_EEPROM);
     }
-    if(doc["setGoal"][2] != kd_EEPROM)
+    if (doc["setGoal"][2] != kd_EEPROM)
     {
       kd_EEPROM = doc["setGoal"][0];
       EEPROM.put(eeAdresse + (sizeFloat * 2), kd_EEPROM);
@@ -276,14 +303,25 @@ void readMsg(){
   }
 }
 
-
 // Fonctions pour le PID
-double PIDmeasurement(){
+double PIDmeasurement_lineaire()
+{
   // To do
 }
-void PIDcommand(double cmd){
-  // To do
+void PIDcommand(double cmd)
+{
+  if(cmd > 1)
+  {
+    cmd = 1;
+  }
+  else if(cmd < -1)
+  {
+    cmd = -1;
+  }
+
+  AX_.setMotorPWM(0, cmd);
 }
-void PIDgoalReached(){
+void PIDgoalReached()
+{
   // To do
 }
