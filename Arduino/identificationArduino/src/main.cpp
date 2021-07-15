@@ -279,7 +279,13 @@ void readMsg(){
 
 // Fonctions pour le PID
 double PIDmeasurement(){
-  // To do
+
+  double Potpin=analogRead(POTPIN);
+  double counterPulse=vexEncoder_.getCount();
+  double angle=map(Potpin, 0,1023,-145,145);
+
+  double distance;
+  distance= (0.01*PI*counterPulse)/3200; 
 }
 void PIDcommand(double cmd){
   // To do
