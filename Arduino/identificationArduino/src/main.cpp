@@ -40,9 +40,9 @@ enum etats
   StabiliserObjet,
   LacherObjet,
   Retour
-} etat; // machine a etats
-
 }; // machine a etats
+
+
 etats etat = ReculLimitSwitch;
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -109,9 +109,9 @@ void setup()
   timerPulse_.setCallback(endPulse);
 
   // EEPROM
-  EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
-  EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
-  EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
+  // EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
+  // EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
+  // EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
 
   etat = ReculLimitSwitch;
 
@@ -124,6 +124,7 @@ void setup()
     pid_1.setAtGoalFunc(PIDgoalReached_motor);
     pid_1.setEpsilon(0.001);
     pid_1.setPeriod(100);
+    pid_1.enable();
     // pid_1.setIntegralLim(1);
 
     pid_2.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
@@ -134,6 +135,7 @@ void setup()
     pid_2.setEpsilon(0.001);
     pid_2.setPeriod(100);
     //pid_2.setIntegralLim(1);
+    // AX_.setMotorPWM(0,0.4);
 }
 
 /* Boucle principale (infinie)*/
@@ -159,7 +161,9 @@ void loop()
   timerPulse_.update();
 
   // mise à jour du PID
+ 
   pid_1.run();
+ 
   pid_1.setGoal(1);
   pid_2.disable();
   
@@ -349,8 +353,8 @@ void PIDcommand_motor(double cmd)
   {
     cmd = -1;
   }
-  Serial.print("FUCK");
-  Serial.println(cmd);
+  //Serial.print("FUCK");
+ // Serial.println(cmd);
   AX_.setMotorPWM(0, cmd);
 }
 
