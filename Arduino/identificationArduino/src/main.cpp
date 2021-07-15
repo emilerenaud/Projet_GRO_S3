@@ -42,6 +42,8 @@ enum etats
   Retour
 } etat; // machine a etats
 
+}; // machine a etats
+etats etat = ReculLimitSwitch;
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
@@ -64,6 +66,7 @@ float ki_EEPROM = 0.1;
 float kd_EEPROM = 0;
 bool first_scan = true;
 
+bool pidFini = false;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -364,7 +367,7 @@ void PIDgoalReached_motor()
 
 void PIDgoalReached_pendule()
 {
-  // To do
+  pidFini = true;
 }
 
 
