@@ -40,7 +40,7 @@ enum etats
   LacherObjet,
   Retour
 }; // machine a etats
-
+etats etat = ReculLimitSwitch;
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
@@ -61,7 +61,7 @@ int sizeFloat = sizeof(float);
 float kp_EEPROM = 0.25;
 float ki_EEPROM = 0.1;
 float kd_EEPROM = 0;
-
+bool pidFini = false;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -131,7 +131,6 @@ void loop()
 
   // mise à jour du PID
   pid_.run();
-  etats etat = ReculLimitSwitch;
 
   switch (etat)
   {
@@ -330,5 +329,5 @@ void PIDcommand(double cmd)
 }
 void PIDgoalReached()
 {
-  // To do
+  pidFini = true;
 }
