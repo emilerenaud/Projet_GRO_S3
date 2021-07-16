@@ -8,8 +8,9 @@
 /*------------------------------ Librairies ---------------------------------*/
 #include <LibS3GRO.h>
 #include <ArduinoJson.h>
-#include <libExample.h> // Vos propres librairies
+#include <tunerPID.h> // Vos propres librairies
 #include <EEPROM.h>
+
 
 /*------------------------------ Constantes ---------------------------------*/
 
@@ -39,7 +40,8 @@ enum etats
   TraverserObstacle,
   StabiliserObjet,
   LacherObjet,
-  Retour
+  Retour,
+  TunePid
 }; // machine a etats
 
 
@@ -61,12 +63,14 @@ float Mxyz[3]; // tableau pour magnetometre
 
 int eeAdresse = 0;
 int sizeFloat = sizeof(float);
-float kp_EEPROM = 0.25;
-float ki_EEPROM = 0.1;
-float kd_EEPROM = 0;
-bool first_scan = true;
+float kp_EEPROM;
+float ki_EEPROM;
+float kd_EEPROM;
 
+bool first_scan = true;
 bool pidFini = false;
+
+tunerPID* pid1Tune;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -91,6 +95,7 @@ void PIDgoalReached_pendule();
 void setup()
 {
   Serial.begin(BAUD);     // initialisation de la communication serielle
+
   AX_.init();             // initialisation de la carte ArduinoX
   imu_.init();            // initialisation de la centrale inertielle
   vexEncoder_.init(2, 3); // initialisation de l'encodeur VEX
@@ -109,9 +114,9 @@ void setup()
   timerPulse_.setCallback(endPulse);
 
   // EEPROM
-  // EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
-  // EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
-  // EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
+   EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
+   EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
+   EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
 
   etat = ReculLimitSwitch;
 
@@ -136,6 +141,8 @@ void setup()
     pid_2.setPeriod(100);
     //pid_2.setIntegralLim(1);
     // AX_.setMotorPWM(0,0.4);
+
+    pid1Tune = new tunerPID(&pid_1);
 }
 
 /* Boucle principale (infinie)*/
@@ -204,6 +211,15 @@ void loop()
 
   case Retour:
     /* code */
+    break;
+  case TunePid:
+    if (first_scan)
+    {
+      pid_1.setGoal(1);
+      first_scan = false;
+    }
+    pid1Tune->tune();
+    pid_1.run();
     break;
   }
 }
