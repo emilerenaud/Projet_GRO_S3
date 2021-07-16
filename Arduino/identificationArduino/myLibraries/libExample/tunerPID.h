@@ -16,7 +16,7 @@ Exemple de librairie pouvant etre ajoute au projet
 class tunerPID
 {
 public:
-    tunerPID(PID *pid);
+    tunerPID(PID *pid, int addr = 0);
     ~tunerPID();
     void tune();
     void saveValues();
@@ -29,5 +29,6 @@ protected:
     float p_;
     float i_;
     float d_;
+    int eeAdresse_;
 };
 #endif // LibExample_H_

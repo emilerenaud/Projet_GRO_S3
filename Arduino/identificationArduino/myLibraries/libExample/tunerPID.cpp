@@ -4,10 +4,11 @@ Exemple de librairie pouvant etre ajoute au projet
 #include <tunerPID.h>
 
 // Class constructor
-tunerPID::tunerPID(PID *pid)
+tunerPID::tunerPID(PID *pid,int addr)
 {
     tunerSerie_ = new SoftwareSerial(2, 3); // RX, TX
     tunerSerie_->begin(115200);
+    eeAdresse_ = addr;
     readValue();
     pid->setGains(p_, i_, d_);
 }
@@ -45,14 +46,14 @@ void tunerPID::tune()
 
 void tunerPID::saveValues()
 {
-    EEPROM.put(EE_ADRESSE + (sizeof(float) * 0), p_);
-    EEPROM.put(EE_ADRESSE + (sizeof(float) * 1), i_);
-    EEPROM.put(EE_ADRESSE + (sizeof(float) * 2), d_);
+    EEPROM.put(eeAdresse_ + (sizeof(float) * 0), p_);
+    EEPROM.put(eeAdresse_ + (sizeof(float) * 1), i_);
+    EEPROM.put(eeAdresse_ + (sizeof(float) * 2), d_);
 }
 
 void tunerPID::readValue()
 {
-    EEPROM.get(EE_ADRESSE + (sizeof(float) * 0), p_);
-    EEPROM.get(EE_ADRESSE + (sizeof(float) * 1), i_);
-    EEPROM.get(EE_ADRESSE + (sizeof(float) * 2), d_);
+    EEPROM.get(eeAdresse_ + (sizeof(float) * 0), p_);
+    EEPROM.get(eeAdresse_ + (sizeof(float) * 1), i_);
+    EEPROM.get(eeAdresse_ + (sizeof(float) * 2), d_);
 }
