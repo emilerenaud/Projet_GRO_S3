@@ -10,6 +10,7 @@
 #include <ArduinoJson.h>
 #include <tunerPID.h> // Vos propres librairies
 #include <EEPROM.h>
+#include <PIDCustom.h>
 
 
 /*------------------------------ Constantes ---------------------------------*/
@@ -29,8 +30,8 @@ ArduinoX AX_;               // objet arduinoX
 MegaServo servo_;           // objet servomoteur
 VexQuadEncoder vexEncoder_; // objet encodeur vex
 IMU9DOF imu_;               // objet imu
-PID pid_1;                  // objet PID pour le moteur
-PID pid_2;                  // objet PID pour le pendule
+PIDCustom pid_1(0);                  // objet PID pour le moteur
+PIDCustom pid_2(sizeof(float) * 3);                  // objet PID pour le pendule
 
 enum etats
 {
@@ -61,11 +62,6 @@ float Axyz[3]; // tableau pour accelerometre
 float Gxyz[3]; // tableau pour giroscope
 float Mxyz[3]; // tableau pour magnetometre
 
-int eeAdresse = 0;
-int sizeFloat = sizeof(float);
-float kp_EEPROM;
-float ki_EEPROM;
-float kd_EEPROM;
 
 bool first_scan = true;
 bool pidFini = false;
@@ -113,16 +109,10 @@ void setup()
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
 
-  // EEPROM
-   EEPROM.get(eeAdresse + (sizeFloat * 0), kp_EEPROM);
-   EEPROM.get(eeAdresse + (sizeFloat * 1), ki_EEPROM);
-   EEPROM.get(eeAdresse + (sizeFloat * 2), kd_EEPROM);
-
   etat = ReculLimitSwitch;
 
   // PID
 // Initialisation du PID
-    pid_1.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
     // Attache des fonctions de retour
     pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
     pid_1.setCommandFunc(PIDcommand_motor);
@@ -132,7 +122,6 @@ void setup()
     pid_1.enable();
     // pid_1.setIntegralLim(1);
 
-    pid_2.setGains(kp_EEPROM, ki_EEPROM, kd_EEPROM);
     // Attache des fonctions de retour
     pid_2.setMeasurementFunc(PIDmeasurement_pendule);
     pid_2.setCommandFunc(PIDcommand_pendule);
@@ -326,22 +315,18 @@ void readMsg()
   if (!parse_msg.isNull())
   {
     pid_1.disable();
-    if (doc["setGoal"][0] != kp_EEPROM)
+    if (doc["setGoal"][0] != pid_1.getKp())
     {
-      kp_EEPROM = doc["setGoal"][0];
-      EEPROM.put(eeAdresse + (sizeFloat * 0), kp_EEPROM);
+      pid_1.setKp(doc["setGoal"][0]);
     }
-    if (doc["setGoal"][1] != ki_EEPROM)
+    if (doc["setGoal"][1] != pid_1.getKi())
     {
-      ki_EEPROM = doc["setGoal"][0];
-      EEPROM.put(eeAdresse + (sizeFloat * 1), ki_EEPROM);
+      pid_1.setKi(doc["setGoal"][1]);
     }
-    if (doc["setGoal"][2] != kd_EEPROM)
+    if (doc["setGoal"][2] != pid_1.getKd())
     {
-      kd_EEPROM = doc["setGoal"][0];
-      EEPROM.put(eeAdresse + (sizeFloat * 2), kd_EEPROM);
+      pid_1.setKd(doc["setGoal"][2]);
     }
-    pid_1.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
     pid_1.setEpsilon(doc["setGoal"][3]);
     pid_1.setGoal(doc["setGoal"][4]);
     pid_1.enable();
