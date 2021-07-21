@@ -207,7 +207,6 @@ void loop()
       pid_1.setGoal(1);
       first_scan = false;
     }
-    pid1Tune->tune();
     pid_1.run();
     break;
   }
@@ -267,10 +266,14 @@ void sendMsg()
   doc["isGoal"] = pid_1.isAtGoal();
   doc["actualTime"] = pid_1.getActualDt();
 
+  doc["Kp"] = pid_1.getKp();
+  doc["Ki"] = pid_1.getKi();
+  doc["Kd"] = pid_1.getKd();
+
   // Serialisation
-  //serializeJson(doc, Serial);
+  serializeJson(doc, Serial);
   // Envoit
-  //Serial.println();
+  Serial.println();
   shouldSend_ = false;
 }
 
@@ -336,7 +339,7 @@ void readMsg()
 // Fonctions pour le PID
 double PIDmeasurement_lineaire()
 {
-  return (0.01*PI*AX_.readEncoder(0))/3200; // encoder 0
+  return (0.1*PI*AX_.readEncoder(0))/3200; // encoder 0
 }
 double PIDmeasurement_pendule()
 {
