@@ -75,6 +75,10 @@ void MainWindow::receiveFromSerial(QString msg){
             msgReceived_ = msgBuffer_;
             onMessageReceived(msgReceived_);
 
+            Kp = jsonObj["Kp"].toDouble();
+            Ki = jsonObj["Ki"].toDouble();
+            Kd = jsonObj["Kd"].toDouble();
+
             // Si les donnees doivent etre enregistrees
             if(record){
                 writer_->write(jsonObj);
@@ -101,6 +105,7 @@ void MainWindow::connectButtons(){
     connect(ui->pulseButton, SIGNAL(clicked()), this, SLOT(sendPulseStart()));
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
     connect(ui->pushButton_Params, SIGNAL(clicked()), this, SLOT(sendPID()));
+    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(getPID()));
 }
 
 void MainWindow::connectSpinBoxes(){
@@ -146,9 +151,9 @@ void MainWindow::changeJsonKeyValue(){
 void MainWindow::sendPID(){
     // Fonction SLOT pour envoyer les paramettres de pulse
     double goal = ui->lineEdit_DesVal->text().toDouble();
-    double Kp = ui->lineEdit_Kp->text().toDouble();
-    double Ki = ui->lineEdit_Ki->text().toDouble();
-    double Kd = ui->lineEdit_Kd->text().toDouble();
+    Kp = ui->lineEdit_Kp->text().toDouble();
+    Ki = ui->lineEdit_Ki->text().toDouble();
+    Kd = ui->lineEdit_Kd->text().toDouble();
     double thresh = ui->lineEdit_Thresh->text().toDouble();
     // pour minimiser le nombre de decimales( QString::number)
 
@@ -165,6 +170,16 @@ void MainWindow::sendPID(){
     QJsonDocument doc(jsonObject);
     QString strJson(doc.toJson(QJsonDocument::Compact));
     sendMessage(strJson);
+}
+void MainWindow::getPID(){
+    // Fonction SLOT pour envoyer les paramettres de pulse
+    ui->lineEdit_Kp->setText(QString::number(Kp, 'f', 2));
+    ui->lineEdit_Ki->setText(QString::number(Ki, 'f', 2));
+    ui->lineEdit_Kd->setText(QString::number(Kd, 'f', 2));
+
+    // pour minimiser le nombre de decimales( QString::number)
+
+
 }
 void MainWindow::sendPulseSetting(){
     // Fonction SLOT pour envoyer les paramettres de pulse

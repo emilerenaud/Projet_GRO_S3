@@ -49,6 +49,7 @@ private slots:
     void changeJsonKeyValue();
     void startSerialCom(QString);
     void sendPID();
+    void getPID();
 
 private:
     void connectTimers(int updateRate);
@@ -71,6 +72,11 @@ private:
     QString JsonKey_;
     QLineSeries series_;
     QChart chart_;
+
+
+    double Kp = 0;
+    double Ki = 0;
+    double Kd = 0;
 
 
 protected:
