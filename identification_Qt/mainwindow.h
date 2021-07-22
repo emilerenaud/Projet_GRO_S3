@@ -50,6 +50,7 @@ private slots:
     void startSerialCom(QString);
     void sendPID();
     void getPID();
+    void resetGraph();
 
 private:
     void connectTimers(int updateRate);

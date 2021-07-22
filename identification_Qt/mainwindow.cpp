@@ -108,6 +108,7 @@ void MainWindow::connectButtons(){
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
     connect(ui->pushButton_Params, SIGNAL(clicked()), this, SLOT(sendPID()));
     connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(getPID()));
+    connect(ui->pushButton_reset, SIGNAL(clicked()), this, SLOT(resetGraph()));
 }
 
 void MainWindow::connectSpinBoxes(){
@@ -261,4 +262,9 @@ void MainWindow::onMessageReceived(QString msg){
 void MainWindow::onPeriodicUpdate(){
     // Fonction SLOT appelee a intervalle definie dans le constructeur
     qDebug().noquote() << "*";
+}
+void MainWindow::resetGraph()
+{
+    //chart_.removeAllSeries();
+    series_.clear();
 }

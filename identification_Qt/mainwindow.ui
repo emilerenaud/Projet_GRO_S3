@@ -225,6 +225,13 @@
       </property>
      </widget>
     </item>
+    <item row="14" column="0">
+     <widget class="QPushButton" name="pushButton_reset">
+      <property name="text">
+       <string>Reset Graph</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
  </widget>

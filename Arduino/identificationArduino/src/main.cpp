@@ -253,7 +253,7 @@ void sendMsg()
   // Elements du message
 
   doc["time"] = millis();
-  doc["potVex"] = analogRead(POTPIN);
+  doc["potVex"] = map(analogRead(POTPIN), 96,934,-95,85);
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
@@ -353,7 +353,7 @@ double PIDmeasurement_pendule() // Trouver vitesse du pendule.
   double valuePot = analogRead(POTPIN);
   double deltaValuePot = valuePot - lastValuePot;
   vitessePendule = deltaValuePot / deltaTime;
-  anglePendule = map(valuePot, 0,1023,-145,145);
+  anglePendule = map(valuePot, 96,934,-95,85);
   return vitessePendule;
 }
 
