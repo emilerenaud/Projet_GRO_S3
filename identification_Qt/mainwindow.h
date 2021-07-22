@@ -71,6 +71,7 @@ private:
 
     QString JsonKey_;
     QLineSeries series_;
+    QLineSeries seriesGoal_;
     QChart chart_;
 
 

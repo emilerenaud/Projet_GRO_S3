@@ -68,6 +68,8 @@ void MainWindow::receiveFromSerial(QString msg){
                 // Mise en forme du graphique (non optimal)
                 chart_.removeSeries(&series_);
                 chart_.addSeries(&series_);
+                //seriesGoal_.append(time,jsonObj["goal"].toDouble());
+                //chart_.addSeries(&seriesGoal_);
                 chart_.createDefaultAxes();
             }
 
@@ -157,19 +159,26 @@ void MainWindow::sendPID(){
     double thresh = ui->lineEdit_Thresh->text().toDouble();
     // pour minimiser le nombre de decimales( QString::number)
 
-    QJsonArray array = { QString::number(Kp, 'f', 2),
-                         QString::number(Ki, 'f', 2),
-                         QString::number(Kd, 'f', 2),
-                         QString::number(thresh, 'f', 2),
-                         QString::number(goal, 'f', 2)
-                       };
-    QJsonObject jsonObject
+    if(goal <= 2 && goal >= -2)
     {
-        {"setGoal", array}
-    };
-    QJsonDocument doc(jsonObject);
-    QString strJson(doc.toJson(QJsonDocument::Compact));
-    sendMessage(strJson);
+        QJsonArray array = { QString::number(Kp, 'f', 2),
+                             QString::number(Ki, 'f', 2),
+                             QString::number(Kd, 'f', 2),
+                             QString::number(thresh, 'f', 2),
+                             QString::number(goal, 'f', 2)
+                           };
+        QJsonObject jsonObject
+        {
+            {"setGoal", array}
+        };
+        QJsonDocument doc(jsonObject);
+        QString strJson(doc.toJson(QJsonDocument::Compact));
+        sendMessage(strJson);
+    }else
+    {
+        qDebug() << "trop grosse valeur";
+    }
+
 }
 void MainWindow::getPID(){
     // Fonction SLOT pour envoyer les paramettres de pulse

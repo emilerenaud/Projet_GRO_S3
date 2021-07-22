@@ -251,7 +251,7 @@ public:
         label_pathCSV->setText(QString());
         label_10->setText(QApplication::translate("MainWindow", "Valeur Kd", nullptr));
         label_9->setText(QApplication::translate("MainWindow", "Valeur Ki", nullptr));
-        JsonKey->setText(QApplication::translate("MainWindow", "potVex", nullptr));
+        JsonKey->setText(QApplication::translate("MainWindow", "measurements", nullptr));
         label_2->setText(QApplication::translate("MainWindow", "Duree (ms)", nullptr));
         label->setText(QApplication::translate("MainWindow", "Tension [-1,1]", nullptr));
         label_8->setText(QApplication::translate("MainWindow", "Valeur Kp", nullptr));
@@ -264,7 +264,7 @@ public:
         label_5->setText(QApplication::translate("MainWindow", "Port:", nullptr));
         pulseButton->setText(QApplication::translate("MainWindow", "Commande de pulse", nullptr));
         pushButton_Params->setText(QApplication::translate("MainWindow", "Envoie Parametres", nullptr));
-        pushButton->setText(QApplication::translate("MainWindow", "get params", nullptr));
+        pushButton->setText(QApplication::translate("MainWindow", "Obtenir Parametres", nullptr));
     } // retranslateUi
 
 };

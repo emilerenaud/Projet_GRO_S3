@@ -131,7 +131,7 @@ void setup()
     //pid_2.setIntegralLim(1);
     // AX_.setMotorPWM(0,0.4);
 
-    pid1Tune = new tunerPID(&pid_1);
+    
 }
 
 /* Boucle principale (infinie)*/
@@ -160,7 +160,7 @@ void loop()
  
   pid_1.run();
  
-  pid_1.setGoal(1);
+
   pid_2.disable();
   
 
@@ -169,10 +169,10 @@ void loop()
   case ReculLimitSwitch:
     if (first_scan)
     {
-      pid_1.setGoal(1);
+      
       first_scan = false;
     }
-    // pid_1.run();    // peut-etre pas necessaire.
+     //pid_1.run();    // peut-etre pas necessaire.
 
     break;
 
@@ -190,8 +190,8 @@ void loop()
 
   case StabiliserObjet:
     /* code */
-    pid_1.disable();
-    pid_2.setGoal(0);
+   // pid_1.disable();
+   // pid_2.setGoal(0);
     break;
 
   case LacherObjet:
@@ -204,10 +204,10 @@ void loop()
   case TunePid:
     if (first_scan)
     {
-      pid_1.setGoal(1);
+      
       first_scan = false;
     }
-    pid_1.run();
+   // pid_1.run();
     break;
   }
 }
@@ -339,7 +339,7 @@ void readMsg()
 // Fonctions pour le PID
 double PIDmeasurement_lineaire()
 {
-  return (0.1*PI*AX_.readEncoder(0))/3200; // encoder 0
+  return -1*(0.14*PI*AX_.readEncoder(0))/3200; // encoder 0
 }
 double PIDmeasurement_pendule()
 {
@@ -359,7 +359,7 @@ void PIDcommand_motor(double cmd)
   }
   //Serial.print("FUCK");
  // Serial.println(cmd);
-  AX_.setMotorPWM(0, cmd);
+  AX_.setMotorPWM(0, -cmd);
 }
 
 void PIDcommand_pendule(double cmd)

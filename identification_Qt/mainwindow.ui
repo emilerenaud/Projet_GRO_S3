@@ -58,7 +58,7 @@
     <item row="15" column="1">
      <widget class="QLineEdit" name="JsonKey">
       <property name="text">
-       <string>potVex</string>
+       <string>measurements</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -221,7 +221,7 @@
     <item row="15" column="5" colspan="2">
      <widget class="QPushButton" name="pushButton">
       <property name="text">
-       <string>get params</string>
+       <string>Obtenir Parametres</string>
       </property>
      </widget>
     </item>
