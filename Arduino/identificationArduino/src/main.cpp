@@ -66,7 +66,12 @@ float Mxyz[3]; // tableau pour magnetometre
 bool first_scan = true;
 bool pidFini = false;
 
-tunerPID* pid1Tune;
+
+double lastTimePendule = millis();
+double lastValuePot = 0;
+double vitessePendule = 0;
+double anglePendule = 0;
+
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -341,9 +346,15 @@ double PIDmeasurement_lineaire()
 {
   return -1*(0.14*PI*AX_.readEncoder(0))/3200; // encoder 0
 }
-double PIDmeasurement_pendule()
+double PIDmeasurement_pendule() // Trouver vitesse du pendule.
 {
-  return map(analogRead(POTPIN), 0,1023,-145,145);
+  double timeNow = millis();
+  double deltaTime = timeNow - lastTimePendule;
+  double valuePot = analogRead(POTPIN);
+  double deltaValuePot = valuePot - lastValuePot;
+  vitessePendule = deltaValuePot / deltaTime;
+  anglePendule = map(valuePot, 0,1023,-145,145);
+  return vitessePendule;
 }
 
 
