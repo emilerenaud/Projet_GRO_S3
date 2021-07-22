@@ -71,6 +71,7 @@ void MainWindow::receiveFromSerial(QString msg){
                 //seriesGoal_.append(time,jsonObj["goal"].toDouble());
                 //chart_.addSeries(&seriesGoal_);
                 chart_.createDefaultAxes();
+
             }
 
             // Fonction de reception de message (vide pour l'instant)

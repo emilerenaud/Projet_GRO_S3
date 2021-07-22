@@ -72,6 +72,8 @@ double lastValuePot = 0;
 double vitessePendule = 0;
 double anglePendule = 0;
 
+double penduleGoal = 0.15;
+
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -131,7 +133,7 @@ void setup()
     pid_2.setMeasurementFunc(PIDmeasurement_pendule);
     pid_2.setCommandFunc(PIDcommand_pendule);
     pid_2.setAtGoalFunc(PIDgoalReached_pendule);
-    pid_2.setEpsilon(0.001);
+    pid_2.setEpsilon(0.01);
     pid_2.setPeriod(100);
     //pid_2.setIntegralLim(1);
     // AX_.setMotorPWM(0,0.4);
@@ -143,7 +145,7 @@ void setup()
 void loop()
 {
   
-
+  pid_1.setGoal(penduleGoal/2*sin( millis() * 1300) + penduleGoal / 2  );
   if (shouldRead_)
   {
     readMsg();
@@ -162,7 +164,7 @@ void loop()
   timerPulse_.update();
 
   // mise à jour du PID
- 
+  
   pid_1.run();
  
 
@@ -172,17 +174,12 @@ void loop()
   switch (etat)
   {
   case ReculLimitSwitch:
-    if (first_scan)
-    {
-      
-      first_scan = false;
-    }
-     //pid_1.run();    // peut-etre pas necessaire.
+    //pid_1.setGoal(0.25);
 
     break;
 
   case PrendreObjet:
-    /* code */
+    //pid_1.setGoal(0);
     break;
 
   case AtteindreHauteur:
@@ -251,7 +248,7 @@ void sendMsg()
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
   // Elements du message
-
+  PIDmeasurement_pendule();
   doc["time"] = millis();
   doc["potVex"] = map(analogRead(POTPIN), 96,934,-95,85);
   doc["encVex"] = vexEncoder_.getCount();
@@ -270,6 +267,8 @@ void sendMsg()
   doc["gyroZ"] = imu_.getGyroZ();
   doc["isGoal"] = pid_1.isAtGoal();
   doc["actualTime"] = pid_1.getActualDt();
+
+  doc["VitPend"] = vitessePendule;
 
   doc["Kp"] = pid_1.getKp();
   doc["Ki"] = pid_1.getKi();
@@ -336,7 +335,7 @@ void readMsg()
       pid_1.setKd(doc["setGoal"][2]);
     }
     pid_1.setEpsilon(doc["setGoal"][3]);
-    pid_1.setGoal(doc["setGoal"][4]);
+    penduleGoal = doc["setGoal"][4];
     pid_1.enable();
   }
 }
@@ -348,12 +347,14 @@ double PIDmeasurement_lineaire()
 }
 double PIDmeasurement_pendule() // Trouver vitesse du pendule.
 {
+  
   double timeNow = millis();
+
   double deltaTime = timeNow - lastTimePendule;
-  double valuePot = analogRead(POTPIN);
-  double deltaValuePot = valuePot - lastValuePot;
-  vitessePendule = deltaValuePot / deltaTime;
-  anglePendule = map(valuePot, 96,934,-95,85);
+  anglePendule = map(analogRead(POTPIN), 96,934,-95,85);
+  double deltaValuePot = anglePendule - lastValuePot;
+  vitessePendule = (deltaValuePot*1000) / deltaTime;
+  lastValuePot = anglePendule;
   return vitessePendule;
 }
 
@@ -380,8 +381,9 @@ void PIDcommand_pendule(double cmd)
 
 void PIDgoalReached_motor()
 {
-  AX_.setMotorPWM(0,0);
-  pid_1.disable();
+  //AX_.setMotorPWM(0,0);
+    pid_1.enable();
+
 }
 
 void PIDgoalReached_pendule()

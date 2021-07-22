@@ -61,6 +61,7 @@ public:
     QComboBox *comboBoxPort;
     QPushButton *pushButton_Params;
     QPushButton *pushButton;
+    QPushButton *pushButton_reset;
 
     void setupUi(QMainWindow *MainWindow)
     {
@@ -238,6 +239,11 @@ public:
 
         gridLayout->addWidget(pushButton, 15, 5, 1, 2);
 
+        pushButton_reset = new QPushButton(centralWidget);
+        pushButton_reset->setObjectName(QString::fromUtf8("pushButton_reset"));
+
+        gridLayout->addWidget(pushButton_reset, 14, 0, 1, 1);
+
         MainWindow->setCentralWidget(centralWidget);
 
         retranslateUi(MainWindow);
@@ -265,6 +271,7 @@ public:
         pulseButton->setText(QApplication::translate("MainWindow", "Commande de pulse", nullptr));
         pushButton_Params->setText(QApplication::translate("MainWindow", "Envoie Parametres", nullptr));
         pushButton->setText(QApplication::translate("MainWindow", "Obtenir Parametres", nullptr));
+        pushButton_reset->setText(QApplication::translate("MainWindow", "Reset Graph", nullptr));
     } // retranslateUi
 
 };
