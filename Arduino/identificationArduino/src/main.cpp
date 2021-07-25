@@ -73,7 +73,8 @@ double vitessePendule = 0;
 double anglePendule = 0;
 
 double penduleGoal = 0.15;
-
+double distanceGoal = 0.1;
+int compteurBalance = 0;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -124,9 +125,11 @@ void setup()
     pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
     pid_1.setCommandFunc(PIDcommand_motor);
     pid_1.setAtGoalFunc(PIDgoalReached_motor);
-    pid_1.setEpsilon(0.001);
+    pid_1.setEpsilon(0.03);
+    pid_1.setGains(5,0.01,0.01);
     pid_1.setPeriod(100);
     pid_1.enable();
+    pid_1.setGoal(0.1);
     // pid_1.setIntegralLim(1);
 
     // Attache des fonctions de retour
@@ -145,7 +148,7 @@ void setup()
 void loop()
 {
   
-  pid_1.setGoal(penduleGoal/2*sin( millis() * 1300) + penduleGoal / 2  );
+  // pid_1.setGoal(penduleGoal/2*sin( millis() * 1300) + penduleGoal / 2  );
   if (shouldRead_)
   {
     readMsg();
@@ -175,6 +178,7 @@ void loop()
   {
   case ReculLimitSwitch:
     //pid_1.setGoal(0.25);
+
 
     break;
 
@@ -254,19 +258,19 @@ void sendMsg()
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
-  doc["voltage"] = AX_.getVoltage();
-  doc["current"] = AX_.getCurrent();
+  // doc["voltage"] = AX_.getVoltage();
+  // doc["current"] = AX_.getCurrent();
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
   doc["inPulse"] = isInPulse_;
-  doc["accelX"] = imu_.getAccelX();
-  doc["accelY"] = imu_.getAccelY();
-  doc["accelZ"] = imu_.getAccelZ();
-  doc["gyroX"] = imu_.getGyroX();
-  doc["gyroY"] = imu_.getGyroY();
-  doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = pid_1.isAtGoal();
-  doc["actualTime"] = pid_1.getActualDt();
+  // doc["accelX"] = imu_.getAccelX();
+  // doc["accelY"] = imu_.getAccelY();
+  // doc["accelZ"] = imu_.getAccelZ();
+  // doc["gyroX"] = imu_.getGyroX();
+  // doc["gyroY"] = imu_.getGyroY();
+  // doc["gyroZ"] = imu_.getGyroZ();
+  // doc["isGoal"] = pid_1.isAtGoal();
+  // doc["actualTime"] = pid_1.getActualDt();
 
   doc["VitPend"] = vitessePendule;
 
@@ -381,8 +385,26 @@ void PIDcommand_pendule(double cmd)
 
 void PIDgoalReached_motor()
 {
-  //AX_.setMotorPWM(0,0);
-    pid_1.enable();
+  // //AX_.setMotorPWM(0,0);
+  // // if(compteurBalance & 0x01)
+  // // {
+    if(vitessePendule > 0)
+    {
+      pid_1.setGoal(0);
+    }
+    else
+    {
+      pid_1.setGoal(distanceGoal);
+    }
+  compteurBalance ++;
+  pid_1.enable();
+  if(compteurBalance >= 15)
+  {
+    etat = PrendreObjet;
+    pid_1.disable();
+    AX_.setMotorPWM(0, 0);
+  }
+    
 
 }
 
