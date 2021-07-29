@@ -12,7 +12,6 @@
 #include <EEPROM.h>
 #include <PIDCustom.h>
 
-
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD 115200        // Frequence de transmission serielle
@@ -24,6 +23,10 @@
 #define PASPARTOUR 64     // Nombre de pas par tour du moteur
 #define RAPPORTVITESSE 50 // Rapport de vitesse du moteur
 
+#define ANGLE_OPEN_SERVO 170
+#define ANGLE_CLOSE_SERVO 40
+#define LIMIT_SWITCH_PIN 7
+#define START_SWITCH_PIN 6
 /*---------------------------- variables globales ---------------------------*/
 
 ArduinoX AX_;               // objet arduinoX
@@ -35,7 +38,9 @@ PIDCustom pid_2(sizeof(float) * 3);                  // objet PID pour le pendul
 
 enum etats
 {
+  StartSequence,
   ReculLimitSwitch,
+  AvancerObjet,
   PrendreObjet,
   AtteindreHauteur,
   TraverserObstacle,
@@ -45,8 +50,8 @@ enum etats
   TunePid
 }; // machine a etats
 
-
 etats etat = ReculLimitSwitch;
+
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
@@ -63,9 +68,9 @@ float Gxyz[3]; // tableau pour giroscope
 float Mxyz[3]; // tableau pour magnetometre
 
 
+
 bool first_scan = true;
 bool pidFini = false;
-
 
 double lastTimePendule = millis();
 double lastValuePot = 0;
@@ -74,7 +79,13 @@ double anglePendule = 0;
 
 double penduleGoal = 0.15;
 double distanceGoal = 0.1;
+bool PIDGoalReached = 0;
 int compteurBalance = 0;
+
+double compteurTotalPulse = 0;
+
+double lastTime100ms = 0;
+// bool doOnce = 1;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -93,6 +104,10 @@ void PIDgoalReached_motor();
 void PIDgoalReached_pendule();
 
 // Fonctions
+bool reculLimitSwitch(void);
+bool avancer(double distance);
+void setPIDslow(void);
+
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -119,6 +134,9 @@ void setup()
 
   etat = ReculLimitSwitch;
 
+  servo_.attach(8);
+  servo_.write(ANGLE_CLOSE_SERVO);
+
   // PID
 // Initialisation du PID
     // Attache des fonctions de retour
@@ -129,7 +147,7 @@ void setup()
     pid_1.setGains(5,0.01,0.01);
     pid_1.setPeriod(100);
     pid_1.enable();
-    pid_1.setGoal(0.1);
+    // pid_1.setGoal(0.1);
     // pid_1.setIntegralLim(1);
 
     // Attache des fonctions de retour
@@ -140,7 +158,8 @@ void setup()
     pid_2.setPeriod(100);
     //pid_2.setIntegralLim(1);
     // AX_.setMotorPWM(0,0.4);
-
+    pinMode(START_SWITCH_PIN,INPUT); // Peut-etre pas necessaire ?
+    pinMode(LIMIT_SWITCH_PIN,INPUT);
     
 }
 
@@ -170,51 +189,66 @@ void loop()
   
   pid_1.run();
  
-
   pid_2.disable();
   
-
-  switch (etat)
+  double timeNow = millis();
+  if(timeNow - lastTime100ms >= 100)
   {
-  case ReculLimitSwitch:
-    //pid_1.setGoal(0.25);
-
-
-    break;
-
-  case PrendreObjet:
-    //pid_1.setGoal(0);
-    break;
-
-  case AtteindreHauteur:
-    /* code */
-    break;
-
-  case TraverserObstacle:
-    /* code */
-    break;
-
-  case StabiliserObjet:
-    /* code */
-   // pid_1.disable();
-   // pid_2.setGoal(0);
-    break;
-
-  case LacherObjet:
-    /* code */
-    break;
-
-  case Retour:
-    /* code */
-    break;
-  case TunePid:
-    if (first_scan)
+    lastTime100ms = timeNow;
+    switch (etat)
     {
-      
-      first_scan = false;
+      case StartSequence:
+        if(digitalRead(START_SWITCH_PIN))
+        {
+          etat = ReculLimitSwitch;
+          servo_.write(ANGLE_OPEN_SERVO); // just in case
+        }
+        break;
+      case ReculLimitSwitch:
+        if(!reculLimitSwitch())
+        {
+          etat = AvancerObjet;
+        }
+        break;
+      case AvancerObjet:
+        if(!avancer(0.1))
+          etat = PrendreObjet;
+        break;
+      case PrendreObjet:
+        servo_.write(ANGLE_CLOSE_SERVO);
+        break;
+
+      case AtteindreHauteur:
+        /* code */
+        break;
+
+      case TraverserObstacle:
+        /* code */
+        break;
+
+      case StabiliserObjet:
+        /* code */
+      // pid_1.disable();
+      // pid_2.setGoal(0);
+        break;
+
+      case LacherObjet:
+        /* code */
+        servo_.write(ANGLE_OPEN_SERVO);
+        break;
+
+      case Retour:
+        /* code */
+        break;
+      case TunePid:
+        if (first_scan)
+        {
+          
+          first_scan = false;
+        }
+      // pid_1.run();
+        break;
     }
-   // pid_1.run();
-    break;
   }
 }
 
@@ -349,9 +383,9 @@ double PIDmeasurement_lineaire()
 {
   return -1*(0.14*PI*AX_.readEncoder(0))/3200; // encoder 0
 }
+
 double PIDmeasurement_pendule() // Trouver vitesse du pendule.
 {
-  
   double timeNow = millis();
 
   double deltaTime = timeNow - lastTimePendule;
@@ -385,25 +419,23 @@ void PIDcommand_pendule(double cmd)
 
 void PIDgoalReached_motor()
 {
-  // //AX_.setMotorPWM(0,0);
-  // // if(compteurBalance & 0x01)
-  // // {
-    if(vitessePendule > 0)
-    {
-      pid_1.setGoal(0);
-    }
-    else
-    {
-      pid_1.setGoal(distanceGoal);
-    }
-  compteurBalance ++;
-  pid_1.enable();
-  if(compteurBalance >= 15)
-  {
-    etat = PrendreObjet;
-    pid_1.disable();
-    AX_.setMotorPWM(0, 0);
-  }
+  PIDGoalReached = 1;
+  // if(vitessePendule > 0)
+  // {
+  //   pid_1.setGoal(0);
+  // }
+  // else
+  // {
+  //   pid_1.setGoal(distanceGoal);
+  // }
+  // compteurBalance ++;
+  // pid_1.enable();
+  // if(compteurBalance >= 15)
+  // {
+  //   etat = PrendreObjet;
+  //   pid_1.disable();
+  //   AX_.setMotorPWM(0, 0);
+  // }
     
 
 }
@@ -413,4 +445,54 @@ void PIDgoalReached_pendule()
   pidFini = true;
 }
 
+bool reculLimitSwitch()
+{
+  // Set slow pid
+  static bool setupRecul = 0;
+  if(setupRecul == 0)
+  {
+    setPIDslow();
+    pid_1.setGoal(-0.5);
+    pid_1.enable();
+    setupRecul = 1;
+  }
+  // reculer
+  if(digitalRead(LIMIT_SWITCH_PIN))
+  {
+    AX_.setMotorPWM(0,0);
+    pid_1.setGoal(0);
+    pid_1.disable();
+    setupRecul = 0;
+    // reset compte de pulse
+    return 0;
+  }
+  return 1;
+  // if()
+  // limit switch
+  // return
+}
 
+bool avancer(double distance)
+{
+  static bool setupAvancer = 0;
+  if(setupAvancer == 0)
+  {
+    setPIDslow();
+    pid_1.setGoal(distance);
+    pid_1.enable();
+    setupAvancer = 1;
+  }
+  if(PIDGoalReached == 1)
+  {
+    setupAvancer = 0;
+    PIDGoalReached = 0;
+    return 0;
+  }
+  return 1;
+}
+
+void setPIDslow(void)
+{
+  pid_1.setGains(1,0.02,0.01); // surtout kp plus bas.
+  pid_1.setEpsilon(0.03);
+}
