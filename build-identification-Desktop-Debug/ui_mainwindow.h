@@ -32,42 +32,43 @@ class Ui_MainWindow
 public:
     QWidget *centralWidget;
     QGridLayout *gridLayout;
-    QLabel *label_pathCSV;
-    QLineEdit *lineEdit_Kp;
-    QLabel *label_10;
     QLabel *label_9;
-    QFrame *line_3;
-    QLineEdit *JsonKey;
+    QLabel *label_10;
+    QLabel *label_pathCSV;
+    QLineEdit *lineEdit_DesVal;
+    QPushButton *pulseButton;
+    QChartView *graph;
     QLabel *label_2;
-    QLabel *label;
     QDoubleSpinBox *PWMBox;
-    QLabel *label_8;
-    QLabel *label_3;
     QLabel *label_4;
-    QFrame *line;
+    QFrame *line_3;
+    QSpinBox *DurationBox;
+    QPushButton *pushButton_reset;
+    QPushButton *pushButton_Params;
     QLineEdit *lineEdit_Kd;
-    QLineEdit *lineEdit_Ki;
+    QLabel *label;
+    QPushButton *pushButton;
+    QLineEdit *JsonKey;
+    QLabel *label_3;
+    QLabel *label_8;
+    QCheckBox *checkBox;
+    QLineEdit *lineEdit_Kp;
+    QLabel *label_5;
+    QComboBox *comboBoxPort;
     QLabel *label_6;
+    QFrame *line;
+    QLabel *label_11;
+    QLineEdit *lineEdit_Thresh;
     QTextBrowser *textBrowser;
     QLabel *label_7;
-    QCheckBox *checkBox;
-    QLabel *label_11;
-    QLineEdit *lineEdit_DesVal;
-    QSpinBox *DurationBox;
-    QLabel *label_5;
-    QChartView *graph;
-    QPushButton *pulseButton;
-    QLineEdit *lineEdit_Thresh;
-    QComboBox *comboBoxPort;
-    QPushButton *pushButton_Params;
-    QPushButton *pushButton;
-    QPushButton *pushButton_reset;
+    QLineEdit *lineEdit_Ki;
+    QWidget *widget;
 
     void setupUi(QMainWindow *MainWindow)
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(752, 578);
+        MainWindow->resize(873, 578);
         MainWindow->setAcceptDrops(false);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
@@ -75,6 +76,16 @@ public:
         gridLayout->setSpacing(6);
         gridLayout->setContentsMargins(11, 11, 11, 11);
         gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
+        label_9 = new QLabel(centralWidget);
+        label_9->setObjectName(QString::fromUtf8("label_9"));
+
+        gridLayout->addWidget(label_9, 8, 6, 1, 1);
+
+        label_10 = new QLabel(centralWidget);
+        label_10->setObjectName(QString::fromUtf8("label_10"));
+
+        gridLayout->addWidget(label_10, 9, 6, 1, 1);
+
         label_pathCSV = new QLabel(centralWidget);
         label_pathCSV->setObjectName(QString::fromUtf8("label_pathCSV"));
         label_pathCSV->setFrameShape(QFrame::StyledPanel);
@@ -82,43 +93,25 @@ public:
 
         gridLayout->addWidget(label_pathCSV, 6, 0, 1, 2);
 
-        lineEdit_Kp = new QLineEdit(centralWidget);
-        lineEdit_Kp->setObjectName(QString::fromUtf8("lineEdit_Kp"));
+        lineEdit_DesVal = new QLineEdit(centralWidget);
+        lineEdit_DesVal->setObjectName(QString::fromUtf8("lineEdit_DesVal"));
 
-        gridLayout->addWidget(lineEdit_Kp, 7, 6, 1, 1);
+        gridLayout->addWidget(lineEdit_DesVal, 6, 7, 1, 1);
 
-        label_10 = new QLabel(centralWidget);
-        label_10->setObjectName(QString::fromUtf8("label_10"));
+        pulseButton = new QPushButton(centralWidget);
+        pulseButton->setObjectName(QString::fromUtf8("pulseButton"));
 
-        gridLayout->addWidget(label_10, 9, 5, 1, 1);
+        gridLayout->addWidget(pulseButton, 9, 0, 1, 2);
 
-        label_9 = new QLabel(centralWidget);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
+        graph = new QChartView(centralWidget);
+        graph->setObjectName(QString::fromUtf8("graph"));
 
-        gridLayout->addWidget(label_9, 8, 5, 1, 1);
-
-        line_3 = new QFrame(centralWidget);
-        line_3->setObjectName(QString::fromUtf8("line_3"));
-        line_3->setFrameShape(QFrame::VLine);
-        line_3->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_3, 4, 4, 13, 1);
-
-        JsonKey = new QLineEdit(centralWidget);
-        JsonKey->setObjectName(QString::fromUtf8("JsonKey"));
-        JsonKey->setAlignment(Qt::AlignCenter);
-
-        gridLayout->addWidget(JsonKey, 15, 1, 1, 1);
+        gridLayout->addWidget(graph, 17, 0, 1, 4);
 
         label_2 = new QLabel(centralWidget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
 
         gridLayout->addWidget(label_2, 8, 0, 1, 1);
-
-        label = new QLabel(centralWidget);
-        label->setObjectName(QString::fromUtf8("label"));
-
-        gridLayout->addWidget(label, 7, 0, 1, 1);
 
         PWMBox = new QDoubleSpinBox(centralWidget);
         PWMBox->setObjectName(QString::fromUtf8("PWMBox"));
@@ -128,21 +121,94 @@ public:
 
         gridLayout->addWidget(PWMBox, 7, 1, 1, 1);
 
-        label_8 = new QLabel(centralWidget);
-        label_8->setObjectName(QString::fromUtf8("label_8"));
+        label_4 = new QLabel(centralWidget);
+        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
-        gridLayout->addWidget(label_8, 7, 5, 1, 1);
+        gridLayout->addWidget(label_4, 4, 3, 1, 1);
+
+        line_3 = new QFrame(centralWidget);
+        line_3->setObjectName(QString::fromUtf8("line_3"));
+        line_3->setFrameShape(QFrame::VLine);
+        line_3->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_3, 4, 4, 14, 1);
+
+        DurationBox = new QSpinBox(centralWidget);
+        DurationBox->setObjectName(QString::fromUtf8("DurationBox"));
+        DurationBox->setKeyboardTracking(false);
+        DurationBox->setMinimum(0);
+        DurationBox->setMaximum(5000);
+        DurationBox->setSingleStep(25);
+
+        gridLayout->addWidget(DurationBox, 8, 1, 1, 1);
+
+        pushButton_reset = new QPushButton(centralWidget);
+        pushButton_reset->setObjectName(QString::fromUtf8("pushButton_reset"));
+
+        gridLayout->addWidget(pushButton_reset, 14, 0, 1, 1);
+
+        pushButton_Params = new QPushButton(centralWidget);
+        pushButton_Params->setObjectName(QString::fromUtf8("pushButton_Params"));
+
+        gridLayout->addWidget(pushButton_Params, 14, 6, 1, 2);
+
+        lineEdit_Kd = new QLineEdit(centralWidget);
+        lineEdit_Kd->setObjectName(QString::fromUtf8("lineEdit_Kd"));
+
+        gridLayout->addWidget(lineEdit_Kd, 9, 7, 1, 1);
+
+        label = new QLabel(centralWidget);
+        label->setObjectName(QString::fromUtf8("label"));
+
+        gridLayout->addWidget(label, 7, 0, 1, 1);
+
+        pushButton = new QPushButton(centralWidget);
+        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+
+        gridLayout->addWidget(pushButton, 15, 6, 1, 2);
+
+        JsonKey = new QLineEdit(centralWidget);
+        JsonKey->setObjectName(QString::fromUtf8("JsonKey"));
+        JsonKey->setAlignment(Qt::AlignCenter);
+
+        gridLayout->addWidget(JsonKey, 15, 1, 1, 1);
 
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
 
         gridLayout->addWidget(label_3, 15, 0, 1, 1);
 
-        label_4 = new QLabel(centralWidget);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
-        label_4->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
+        label_8 = new QLabel(centralWidget);
+        label_8->setObjectName(QString::fromUtf8("label_8"));
 
-        gridLayout->addWidget(label_4, 4, 3, 1, 1);
+        gridLayout->addWidget(label_8, 7, 6, 1, 1);
+
+        checkBox = new QCheckBox(centralWidget);
+        checkBox->setObjectName(QString::fromUtf8("checkBox"));
+
+        gridLayout->addWidget(checkBox, 5, 0, 1, 2);
+
+        lineEdit_Kp = new QLineEdit(centralWidget);
+        lineEdit_Kp->setObjectName(QString::fromUtf8("lineEdit_Kp"));
+
+        gridLayout->addWidget(lineEdit_Kp, 7, 7, 1, 1);
+
+        label_5 = new QLabel(centralWidget);
+        label_5->setObjectName(QString::fromUtf8("label_5"));
+
+        gridLayout->addWidget(label_5, 4, 0, 1, 1);
+
+        comboBoxPort = new QComboBox(centralWidget);
+        comboBoxPort->setObjectName(QString::fromUtf8("comboBoxPort"));
+
+        gridLayout->addWidget(comboBoxPort, 4, 1, 1, 1);
+
+        label_6 = new QLabel(centralWidget);
+        label_6->setObjectName(QString::fromUtf8("label_6"));
+        label_6->setAlignment(Qt::AlignCenter);
+
+        gridLayout->addWidget(label_6, 4, 6, 1, 2);
 
         line = new QFrame(centralWidget);
         line->setObjectName(QString::fromUtf8("line"));
@@ -151,21 +217,15 @@ public:
 
         gridLayout->addWidget(line, 14, 2, 1, 1);
 
-        lineEdit_Kd = new QLineEdit(centralWidget);
-        lineEdit_Kd->setObjectName(QString::fromUtf8("lineEdit_Kd"));
+        label_11 = new QLabel(centralWidget);
+        label_11->setObjectName(QString::fromUtf8("label_11"));
 
-        gridLayout->addWidget(lineEdit_Kd, 9, 6, 1, 1);
+        gridLayout->addWidget(label_11, 10, 6, 1, 1);
 
-        lineEdit_Ki = new QLineEdit(centralWidget);
-        lineEdit_Ki->setObjectName(QString::fromUtf8("lineEdit_Ki"));
+        lineEdit_Thresh = new QLineEdit(centralWidget);
+        lineEdit_Thresh->setObjectName(QString::fromUtf8("lineEdit_Thresh"));
 
-        gridLayout->addWidget(lineEdit_Ki, 8, 6, 1, 1);
-
-        label_6 = new QLabel(centralWidget);
-        label_6->setObjectName(QString::fromUtf8("label_6"));
-        label_6->setAlignment(Qt::AlignCenter);
-
-        gridLayout->addWidget(label_6, 4, 5, 1, 2);
+        gridLayout->addWidget(lineEdit_Thresh, 10, 7, 1, 1);
 
         textBrowser = new QTextBrowser(centralWidget);
         textBrowser->setObjectName(QString::fromUtf8("textBrowser"));
@@ -178,71 +238,17 @@ public:
         label_7 = new QLabel(centralWidget);
         label_7->setObjectName(QString::fromUtf8("label_7"));
 
-        gridLayout->addWidget(label_7, 6, 5, 1, 1);
+        gridLayout->addWidget(label_7, 6, 6, 1, 1);
 
-        checkBox = new QCheckBox(centralWidget);
-        checkBox->setObjectName(QString::fromUtf8("checkBox"));
+        lineEdit_Ki = new QLineEdit(centralWidget);
+        lineEdit_Ki->setObjectName(QString::fromUtf8("lineEdit_Ki"));
 
-        gridLayout->addWidget(checkBox, 5, 0, 1, 2);
+        gridLayout->addWidget(lineEdit_Ki, 8, 7, 1, 1);
 
-        label_11 = new QLabel(centralWidget);
-        label_11->setObjectName(QString::fromUtf8("label_11"));
+        widget = new QWidget(centralWidget);
+        widget->setObjectName(QString::fromUtf8("widget"));
 
-        gridLayout->addWidget(label_11, 10, 5, 1, 1);
-
-        lineEdit_DesVal = new QLineEdit(centralWidget);
-        lineEdit_DesVal->setObjectName(QString::fromUtf8("lineEdit_DesVal"));
-
-        gridLayout->addWidget(lineEdit_DesVal, 6, 6, 1, 1);
-
-        DurationBox = new QSpinBox(centralWidget);
-        DurationBox->setObjectName(QString::fromUtf8("DurationBox"));
-        DurationBox->setKeyboardTracking(false);
-        DurationBox->setMinimum(0);
-        DurationBox->setMaximum(5000);
-        DurationBox->setSingleStep(25);
-
-        gridLayout->addWidget(DurationBox, 8, 1, 1, 1);
-
-        label_5 = new QLabel(centralWidget);
-        label_5->setObjectName(QString::fromUtf8("label_5"));
-
-        gridLayout->addWidget(label_5, 4, 0, 1, 1);
-
-        graph = new QChartView(centralWidget);
-        graph->setObjectName(QString::fromUtf8("graph"));
-
-        gridLayout->addWidget(graph, 16, 0, 1, 4);
-
-        pulseButton = new QPushButton(centralWidget);
-        pulseButton->setObjectName(QString::fromUtf8("pulseButton"));
-
-        gridLayout->addWidget(pulseButton, 9, 0, 1, 2);
-
-        lineEdit_Thresh = new QLineEdit(centralWidget);
-        lineEdit_Thresh->setObjectName(QString::fromUtf8("lineEdit_Thresh"));
-
-        gridLayout->addWidget(lineEdit_Thresh, 10, 6, 1, 1);
-
-        comboBoxPort = new QComboBox(centralWidget);
-        comboBoxPort->setObjectName(QString::fromUtf8("comboBoxPort"));
-
-        gridLayout->addWidget(comboBoxPort, 4, 1, 1, 1);
-
-        pushButton_Params = new QPushButton(centralWidget);
-        pushButton_Params->setObjectName(QString::fromUtf8("pushButton_Params"));
-
-        gridLayout->addWidget(pushButton_Params, 14, 5, 1, 2);
-
-        pushButton = new QPushButton(centralWidget);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
-
-        gridLayout->addWidget(pushButton, 15, 5, 1, 2);
-
-        pushButton_reset = new QPushButton(centralWidget);
-        pushButton_reset->setObjectName(QString::fromUtf8("pushButton_reset"));
-
-        gridLayout->addWidget(pushButton_reset, 14, 0, 1, 1);
+        gridLayout->addWidget(widget, 16, 6, 1, 1);
 
         MainWindow->setCentralWidget(centralWidget);
 
@@ -254,24 +260,24 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "Interface Identification", nullptr));
-        label_pathCSV->setText(QString());
-        label_10->setText(QApplication::translate("MainWindow", "Valeur Kd", nullptr));
         label_9->setText(QApplication::translate("MainWindow", "Valeur Ki", nullptr));
-        JsonKey->setText(QApplication::translate("MainWindow", "measurements", nullptr));
-        label_2->setText(QApplication::translate("MainWindow", "Duree (ms)", nullptr));
-        label->setText(QApplication::translate("MainWindow", "Tension [-1,1]", nullptr));
-        label_8->setText(QApplication::translate("MainWindow", "Valeur Kp", nullptr));
-        label_3->setText(QApplication::translate("MainWindow", "Donnees brutes:", nullptr));
-        label_4->setText(QApplication::translate("MainWindow", "Messages Json de l'Arduino:", nullptr));
-        label_6->setText(QApplication::translate("MainWindow", "Execice PID", nullptr));
-        label_7->setText(QApplication::translate("MainWindow", "Val. desiree", nullptr));
-        checkBox->setText(QApplication::translate("MainWindow", "Enregistrement des donnees sous:", nullptr));
-        label_11->setText(QApplication::translate("MainWindow", "Seuil", nullptr));
-        label_5->setText(QApplication::translate("MainWindow", "Port:", nullptr));
+        label_10->setText(QApplication::translate("MainWindow", "Valeur Kd", nullptr));
+        label_pathCSV->setText(QString());
         pulseButton->setText(QApplication::translate("MainWindow", "Commande de pulse", nullptr));
-        pushButton_Params->setText(QApplication::translate("MainWindow", "Envoie Parametres", nullptr));
-        pushButton->setText(QApplication::translate("MainWindow", "Obtenir Parametres", nullptr));
+        label_2->setText(QApplication::translate("MainWindow", "Duree (ms)", nullptr));
+        label_4->setText(QApplication::translate("MainWindow", "Messages Json de l'Arduino:", nullptr));
         pushButton_reset->setText(QApplication::translate("MainWindow", "Reset Graph", nullptr));
+        pushButton_Params->setText(QApplication::translate("MainWindow", "Envoie Parametres", nullptr));
+        label->setText(QApplication::translate("MainWindow", "Tension [-1,1]", nullptr));
+        pushButton->setText(QApplication::translate("MainWindow", "Obtenir Parametres", nullptr));
+        JsonKey->setText(QApplication::translate("MainWindow", "measurements", nullptr));
+        label_3->setText(QApplication::translate("MainWindow", "Donnees brutes:", nullptr));
+        label_8->setText(QApplication::translate("MainWindow", "Valeur Kp", nullptr));
+        checkBox->setText(QApplication::translate("MainWindow", "Enregistrement des donnees sous:", nullptr));
+        label_5->setText(QApplication::translate("MainWindow", "Port:", nullptr));
+        label_6->setText(QApplication::translate("MainWindow", "Execice PID", nullptr));
+        label_11->setText(QApplication::translate("MainWindow", "Seuil", nullptr));
+        label_7->setText(QApplication::translate("MainWindow", "Val. desiree", nullptr));
     } // retranslateUi
 
 };

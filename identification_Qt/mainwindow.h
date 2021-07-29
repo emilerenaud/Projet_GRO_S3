@@ -14,9 +14,13 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts>
 
+#include <QPainter>
+
 // Propres librairies
 #include "csvwriter.h"
 #include "serialprotocol.h"
+
+#define PI 3.14159265
 
 // Classe definissant l'application
 namespace Ui {
@@ -74,12 +78,12 @@ private:
     QLineSeries series_;
     QLineSeries seriesGoal_;
     QChart chart_;
-
+    void paintEvent(QPaintEvent *event);
 
     double Kp = 0;
     double Ki = 0;
     double Kd = 0;
-
+    double angle = 0;
 
 protected:
     Ui::MainWindow *ui;
