@@ -83,7 +83,7 @@ private:
     double Kp = 0;
     double Ki = 0;
     double Kd = 0;
-    double angle = 0;
+    double angle = 50;
 
 protected:
     Ui::MainWindow *ui;

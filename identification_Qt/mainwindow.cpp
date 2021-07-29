@@ -279,9 +279,9 @@ void MainWindow::paintEvent(QPaintEvent *event)
     QPainter painter(this);
 
     //a simple line
-
+    painter.setPen(QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap));
     painter.drawLine(725,354,100*sin(angle*PI/180)+725,100*cos(angle*PI/180)+354);
-
+    painter.drawEllipse(100*sin(angle*PI/180)+720,100*cos(angle*PI/180)+349,10,10);
 
     //create a black pen that has solid line
     //and the width is 2.
