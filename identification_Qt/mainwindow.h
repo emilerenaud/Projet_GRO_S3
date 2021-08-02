@@ -56,6 +56,10 @@ private slots:
     void getPID();
     void resetGraph();
 
+    void on_pushButton_hauteur_clicked();
+
+    void on_horizontalScrollBar_sliderMoved(int position);
+
 private:
     void connectTimers(int updateRate);
     void connectButtons();
@@ -84,6 +88,7 @@ private:
     double Ki = 0;
     double Kd = 0;
     double angle = 50;
+    double distance = 0.75;
 
 protected:
     Ui::MainWindow *ui;

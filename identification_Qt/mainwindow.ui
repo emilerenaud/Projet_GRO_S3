@@ -65,8 +65,8 @@
    <widget class="QPushButton" name="pulseButton">
     <property name="geometry">
      <rect>
-      <x>9</x>
-      <y>164</y>
+      <x>10</x>
+      <y>160</y>
       <width>171</width>
       <height>25</height>
      </rect>
@@ -79,9 +79,9 @@
     <property name="geometry">
      <rect>
       <x>9</x>
-      <y>307</y>
+      <y>327</y>
       <width>441</width>
-      <height>201</height>
+      <height>181</height>
      </rect>
     </property>
    </widget>
@@ -210,8 +210,8 @@
    <widget class="QLineEdit" name="JsonKey">
     <property name="geometry">
      <rect>
-      <x>131</x>
-      <y>268</y>
+      <x>130</x>
+      <y>300</y>
       <width>142</width>
       <height>25</height>
      </rect>
@@ -227,7 +227,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>270</y>
+      <y>300</y>
       <width>112</width>
       <height>17</height>
      </rect>
@@ -305,7 +305,7 @@
     <property name="geometry">
      <rect>
       <x>470</x>
-      <y>320</y>
+      <y>340</y>
       <width>511</width>
       <height>16</height>
      </rect>
@@ -412,11 +412,14 @@
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEdit_DesVal">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>830</x>
       <y>64</y>
-      <width>142</width>
+      <width>143</width>
       <height>25</height>
      </rect>
     </property>
@@ -425,7 +428,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>239</y>
+      <y>270</y>
       <width>92</width>
       <height>25</height>
      </rect>
@@ -434,23 +437,104 @@
      <string>Reset Graph</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="textBrowser_2">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
+   <widget class="QLineEdit" name="lineEdit_hauteur">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>200</y>
-      <width>181</width>
-      <height>21</height>
+      <y>230</y>
+      <width>142</width>
+      <height>25</height>
      </rect>
     </property>
-    <property name="maximumSize">
-     <size>
-      <width>16777215</width>
-      <height>70</height>
-     </size>
+   </widget>
+   <widget class="QPushButton" name="pushButton_hauteur">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>230</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>envoyer</string>
+    </property>
+   </widget>
+   <widget class="Line" name="line_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>180</y>
+      <width>271</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="Line" name="line_4">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>250</y>
+      <width>271</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_12">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>200</y>
+      <width>251</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Ajustement Hauteur (cm)</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_flash">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>300</y>
+      <width>101</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="lineWidth">
+     <number>0</number>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;img src=&quot;:/flash.png&quot;/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QScrollBar" name="horizontalScrollBar">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>440</y>
+      <width>451</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>10</number>
+    </property>
+    <property name="value">
+     <number>0</number>
+    </property>
+    <property name="tracking">
+     <bool>true</bool>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
     </property>
    </widget>
   </widget>

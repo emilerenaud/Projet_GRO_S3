@@ -82,6 +82,7 @@ void MainWindow::receiveFromSerial(QString msg){
             Ki = jsonObj["Ki"].toDouble();
             Kd = jsonObj["Kd"].toDouble();
             angle = jsonObj["potVex"].toDouble();
+            distance = jsonObj["measurements"].toDouble();
             update();
             // Si les donnees doivent etre enregistrees
             if(record){
@@ -274,47 +275,26 @@ void MainWindow::resetGraph()
 }
 void MainWindow::paintEvent(QPaintEvent *event)
 {
+    int x = 470 + ((ui->horizontalScrollBar->value()*500)/10);//((distance*500)/1.5);
+    int y = 350;
+    if(x < 0){x=470;}
+    if(x > 970){x=970;}
     //create a QPainter and pass a pointer to the device.
     //A paint device can be a QWidget, a QPixmap or a QImage
     QPainter painter(this);
-
+    ui->label_flash->move(x-50,y-60);
     //a simple line
     painter.setPen(QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::black);
-    painter.drawLine(725,354,100*sin(angle*PI/180)+725,100*cos(angle*PI/180)+354);
-    painter.drawEllipse(100*sin(angle*PI/180)+720,100*cos(angle*PI/180)+349,10,10);
+    painter.drawLine(x,y,100*sin(angle*PI/180)+x,100*cos(angle*PI/180)+y);
+    painter.drawEllipse(100*sin(angle*PI/180)+(x-5),100*cos(angle*PI/180)+(y-1),10,10);
 
-    //create a black pen that has solid line
-    //and the width is 2.
-//    QPen myPen(Qt::black, 2, Qt::SolidLine);
-//    painter.setPen(myPen);
-//    painter.drawLine(100,100,100,1);
-
-//    //draw a point
-//    myPen.setColor(Qt::red);
-//    painter.drawPoint(110,110);
-
-//    //draw a polygon
-//    QPolygon polygon;
-//    polygon << QPoint(130, 140) << QPoint(180, 170)
-//             << QPoint(180, 140) << QPoint(220, 110)
-//             << QPoint(140, 100);
-//     painter.drawPolygon(polygon);
-
-     //draw an ellipse
-     //The setRenderHint() call enables antialiasing, telling QPainter to use different
-     //color intensities on the edges to reduce the visual distortion that normally
-     //occurs when the edges of a shape are converted into pixels
-//     painter.setRenderHint(QPainter::Antialiasing, true);
-//     painter.setPen(QPen(Qt::black, 3, Qt::DashDotLine, Qt::RoundCap));
-//     painter.setBrush(QBrush(Qt::green, Qt::SolidPattern));
-//     painter.drawEllipse(200, 80, 400, 240);
 
 }
 
 void MainWindow::on_pushButton_hauteur_clicked()
 {
-     double hauteur = ui->lineEdit_hauteur->value();
+     double hauteur = ui->lineEdit_hauteur->text().toDouble();
     QJsonObject jsonObject
     {// pour minimiser le nombre de decimales( QString::number)
         {"hauteurObstacle", QString::number(hauteur)}
@@ -322,4 +302,9 @@ void MainWindow::on_pushButton_hauteur_clicked()
     QJsonDocument doc(jsonObject);
     QString strJson(doc.toJson(QJsonDocument::Compact));
     sendMessage(strJson);
+}
+
+void MainWindow::on_horizontalScrollBar_sliderMoved(int position)
+{
+     update();
 }

@@ -20,6 +20,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollBar>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTextBrowser>
 #include <QtWidgets/QWidget>
@@ -61,7 +62,13 @@ public:
     QLineEdit *lineEdit_Kp;
     QLineEdit *lineEdit_DesVal;
     QPushButton *pushButton_reset;
-    QTextBrowser *textBrowser_2;
+    QLineEdit *lineEdit_hauteur;
+    QPushButton *pushButton_hauteur;
+    QFrame *line_2;
+    QFrame *line_4;
+    QLabel *label_12;
+    QLabel *label_flash;
+    QScrollBar *horizontalScrollBar;
 
     void setupUi(QMainWindow *MainWindow)
     {
@@ -84,10 +91,10 @@ public:
         label_pathCSV->setTextFormat(Qt::AutoText);
         pulseButton = new QPushButton(centralWidget);
         pulseButton->setObjectName(QString::fromUtf8("pulseButton"));
-        pulseButton->setGeometry(QRect(9, 164, 171, 25));
+        pulseButton->setGeometry(QRect(10, 160, 171, 25));
         graph = new QChartView(centralWidget);
         graph->setObjectName(QString::fromUtf8("graph"));
-        graph->setGeometry(QRect(9, 307, 441, 201));
+        graph->setGeometry(QRect(9, 327, 441, 181));
         label_2 = new QLabel(centralWidget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
         label_2->setGeometry(QRect(9, 132, 75, 17));
@@ -124,11 +131,11 @@ public:
         pushButton->setGeometry(QRect(730, 260, 261, 25));
         JsonKey = new QLineEdit(centralWidget);
         JsonKey->setObjectName(QString::fromUtf8("JsonKey"));
-        JsonKey->setGeometry(QRect(131, 268, 142, 25));
+        JsonKey->setGeometry(QRect(130, 300, 142, 25));
         JsonKey->setAlignment(Qt::AlignCenter);
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
-        label_3->setGeometry(QRect(10, 270, 112, 17));
+        label_3->setGeometry(QRect(10, 300, 112, 17));
         label_8 = new QLabel(centralWidget);
         label_8->setObjectName(QString::fromUtf8("label_8"));
         label_8->setGeometry(QRect(745, 95, 66, 17));
@@ -147,7 +154,7 @@ public:
         label_6->setAlignment(Qt::AlignCenter);
         line = new QFrame(centralWidget);
         line->setObjectName(QString::fromUtf8("line"));
-        line->setGeometry(QRect(470, 320, 511, 16));
+        line->setGeometry(QRect(470, 340, 511, 16));
         line->setFrameShadow(QFrame::Plain);
         line->setLineWidth(3);
         line->setFrameShape(QFrame::HLine);
@@ -180,15 +187,41 @@ public:
         lineEdit_Kp->setGeometry(QRect(830, 95, 142, 25));
         lineEdit_DesVal = new QLineEdit(centralWidget);
         lineEdit_DesVal->setObjectName(QString::fromUtf8("lineEdit_DesVal"));
-        lineEdit_DesVal->setGeometry(QRect(830, 64, 142, 25));
+        lineEdit_DesVal->setEnabled(false);
+        lineEdit_DesVal->setGeometry(QRect(830, 64, 143, 25));
         pushButton_reset = new QPushButton(centralWidget);
         pushButton_reset->setObjectName(QString::fromUtf8("pushButton_reset"));
-        pushButton_reset->setGeometry(QRect(10, 239, 92, 25));
-        textBrowser_2 = new QTextBrowser(centralWidget);
-        textBrowser_2->setObjectName(QString::fromUtf8("textBrowser_2"));
-        textBrowser_2->setEnabled(true);
-        textBrowser_2->setGeometry(QRect(10, 200, 181, 21));
-        textBrowser_2->setMaximumSize(QSize(16777215, 70));
+        pushButton_reset->setGeometry(QRect(10, 270, 92, 25));
+        lineEdit_hauteur = new QLineEdit(centralWidget);
+        lineEdit_hauteur->setObjectName(QString::fromUtf8("lineEdit_hauteur"));
+        lineEdit_hauteur->setGeometry(QRect(10, 230, 142, 25));
+        pushButton_hauteur = new QPushButton(centralWidget);
+        pushButton_hauteur->setObjectName(QString::fromUtf8("pushButton_hauteur"));
+        pushButton_hauteur->setGeometry(QRect(170, 230, 89, 25));
+        line_2 = new QFrame(centralWidget);
+        line_2->setObjectName(QString::fromUtf8("line_2"));
+        line_2->setGeometry(QRect(10, 180, 271, 20));
+        line_2->setFrameShape(QFrame::HLine);
+        line_2->setFrameShadow(QFrame::Sunken);
+        line_4 = new QFrame(centralWidget);
+        line_4->setObjectName(QString::fromUtf8("line_4"));
+        line_4->setGeometry(QRect(10, 250, 271, 20));
+        line_4->setFrameShape(QFrame::HLine);
+        line_4->setFrameShadow(QFrame::Sunken);
+        label_12 = new QLabel(centralWidget);
+        label_12->setObjectName(QString::fromUtf8("label_12"));
+        label_12->setGeometry(QRect(20, 200, 251, 17));
+        label_flash = new QLabel(centralWidget);
+        label_flash->setObjectName(QString::fromUtf8("label_flash"));
+        label_flash->setGeometry(QRect(460, 300, 101, 61));
+        label_flash->setLineWidth(0);
+        horizontalScrollBar = new QScrollBar(centralWidget);
+        horizontalScrollBar->setObjectName(QString::fromUtf8("horizontalScrollBar"));
+        horizontalScrollBar->setGeometry(QRect(500, 440, 451, 20));
+        horizontalScrollBar->setMaximum(10);
+        horizontalScrollBar->setValue(0);
+        horizontalScrollBar->setTracking(true);
+        horizontalScrollBar->setOrientation(Qt::Horizontal);
         MainWindow->setCentralWidget(centralWidget);
 
         retranslateUi(MainWindow);
@@ -217,6 +250,9 @@ public:
         label_11->setText(QApplication::translate("MainWindow", "Seuil", nullptr));
         label_7->setText(QApplication::translate("MainWindow", "Val. desiree", nullptr));
         pushButton_reset->setText(QApplication::translate("MainWindow", "Reset Graph", nullptr));
+        pushButton_hauteur->setText(QApplication::translate("MainWindow", "envoyer", nullptr));
+        label_12->setText(QApplication::translate("MainWindow", "Ajustement Hauteur (cm)", nullptr));
+        label_flash->setText(QApplication::translate("MainWindow", "<html><head/><body><p><img src=\":/flash.png\"/></p></body></html>", nullptr));
     } // retranslateUi
 
 };
