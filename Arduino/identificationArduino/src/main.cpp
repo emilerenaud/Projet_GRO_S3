@@ -27,6 +27,8 @@
 #define ANGLE_CLOSE_SERVO 40
 #define LIMIT_SWITCH_PIN 7
 #define START_SWITCH_PIN 6
+
+#define OFFSET_PENDULE 5
 /*---------------------------- variables globales ---------------------------*/
 
 ArduinoX AX_;               // objet arduinoX
@@ -81,6 +83,7 @@ double penduleGoal = 0.15;
 double distanceGoal = 0.1;
 bool PIDGoalReached = 0;
 int compteurBalance = 0;
+int balancement = 0;
 
 double compteurTotalPulse = 0;
 
@@ -107,7 +110,9 @@ void PIDgoalReached_pendule();
 bool reculLimitSwitch(void);
 bool avancer(double distance);
 void setPIDslow(void);
-
+void setPIDHigh(void);
+void disableMotorPID(void);
+void balancerPendule(void);
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -132,7 +137,7 @@ void setup()
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
 
-  etat = ReculLimitSwitch;
+  etat = StartSequence;
 
   servo_.attach(8);
   servo_.write(ANGLE_CLOSE_SERVO);
@@ -216,13 +221,30 @@ void loop()
         break;
       case PrendreObjet:
         servo_.write(ANGLE_CLOSE_SERVO);
+        etat = AtteindreHauteur;
+        delay(3000);
         break;
 
       case AtteindreHauteur:
+        if(balancement == 0)
+        {
+          Serial.println("Atteindre hauteur balancement 0");
+          disableMotorPID();
+          pid_1.setGoal(0.1);
+          pid_1.enable();
+          balancement = 1;
+        }
+        else
+        {
+            setPIDHigh();
+            Serial.println("Goal achieved");
+            //PIDGoalReached = 0;
+        }
         /* code */
         break;
 
       case TraverserObstacle:
+        balancement = 0;
         /* code */
         break;
 
@@ -288,10 +310,11 @@ void sendMsg()
   // Elements du message
   PIDmeasurement_pendule();
   doc["time"] = millis();
-  doc["potVex"] = map(analogRead(POTPIN), 96,934,-95,85);
+  doc["potVex"] = map(analogRead(POTPIN), 96,934,-95,85)+OFFSET_PENDULE;
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
+  // env
   // doc["voltage"] = AX_.getVoltage();
   // doc["current"] = AX_.getCurrent();
   doc["pulsePWM"] = pulsePWM_;
@@ -374,6 +397,7 @@ void readMsg()
     }
     pid_1.setEpsilon(doc["setGoal"][3]);
     penduleGoal = doc["setGoal"][4];
+    // ajouter hauteurObstacle
     pid_1.enable();
   }
 }
@@ -381,7 +405,7 @@ void readMsg()
 // Fonctions pour le PID
 double PIDmeasurement_lineaire()
 {
-  return -1*(0.14*PI*AX_.readEncoder(0))/3200; // encoder 0
+  return -1*(0.14*32*PI*AX_.readEncoder(0))/(3200.0*24.0); // encoder 0
 }
 
 double PIDmeasurement_pendule() // Trouver vitesse du pendule.
@@ -389,7 +413,7 @@ double PIDmeasurement_pendule() // Trouver vitesse du pendule.
   double timeNow = millis();
 
   double deltaTime = timeNow - lastTimePendule;
-  anglePendule = map(analogRead(POTPIN), 96,934,-95,85);
+  anglePendule = map(analogRead(POTPIN), 96,934,-95,85)+OFFSET_PENDULE;
   double deltaValuePot = anglePendule - lastValuePot;
   vitessePendule = (deltaValuePot*1000) / deltaTime;
   lastValuePot = anglePendule;
@@ -420,22 +444,12 @@ void PIDcommand_pendule(double cmd)
 void PIDgoalReached_motor()
 {
   PIDGoalReached = 1;
-  // if(vitessePendule > 0)
-  // {
-  //   pid_1.setGoal(0);
-  // }
-  // else
-  // {
-  //   pid_1.setGoal(distanceGoal);
-  // }
-  // compteurBalance ++;
-  // pid_1.enable();
-  // if(compteurBalance >= 15)
-  // {
-  //   etat = PrendreObjet;
-  //   pid_1.disable();
-  //   AX_.setMotorPWM(0, 0);
-  // }
+  // disableMotorPID();
+  if(etat == AtteindreHauteur && balancement == 1)
+  {
+    // PIDGoalReached = 0;
+    balancerPendule();
+  }
     
 
 }
@@ -459,9 +473,8 @@ bool reculLimitSwitch()
   // reculer
   if(digitalRead(LIMIT_SWITCH_PIN))
   {
-    AX_.setMotorPWM(0,0);
-    pid_1.setGoal(0);
-    pid_1.disable();
+    disableMotorPID();
+    PIDGoalReached = 0;
     setupRecul = 0;
     // reset compte de pulse
     return 0;
@@ -477,6 +490,7 @@ bool avancer(double distance)
   static bool setupAvancer = 0;
   if(setupAvancer == 0)
   {
+    PIDGoalReached = 0;
     setPIDslow();
     pid_1.setGoal(distance);
     pid_1.enable();
@@ -484,10 +498,13 @@ bool avancer(double distance)
   }
   if(PIDGoalReached == 1)
   {
+    Serial.println("Avancer fini");
     setupAvancer = 0;
     PIDGoalReached = 0;
+    disableMotorPID();
     return 0;
   }
+  // Serial.println("avance fokk");
   return 1;
 }
 
@@ -495,4 +512,39 @@ void setPIDslow(void)
 {
   pid_1.setGains(1,0.02,0.01); // surtout kp plus bas.
   pid_1.setEpsilon(0.03);
+}
+
+void setPIDHigh(void)
+{
+  pid_1.setGains(5,0.02,0.01); // surtout kp plus bas.
+  pid_1.setEpsilon(0.03);
+}
+
+void disableMotorPID()
+{
+  AX_.setMotorPWM(0,0);
+  pid_1.setGoal(0);
+  pid_1.disable();
+  PIDGoalReached = 0;
+}
+
+void balancerPendule()
+{
+  Serial.println("Balancer pendule");
+  if(vitessePendule > 0)
+  {
+    pid_1.setGoal(0);
+  }
+  else
+  {
+    pid_1.setGoal(distanceGoal);
+  }
+  compteurBalance ++;
+  pid_1.enable();
+  if(compteurBalance >= 15)
+  {
+    etat = PrendreObjet;
+    pid_1.disable();
+    AX_.setMotorPWM(0, 0);
+  }
 }
