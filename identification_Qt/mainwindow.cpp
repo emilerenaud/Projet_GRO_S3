@@ -280,6 +280,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
     //a simple line
     painter.setPen(QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap));
+    painter.setBrush(Qt::black);
     painter.drawLine(725,354,100*sin(angle*PI/180)+725,100*cos(angle*PI/180)+354);
     painter.drawEllipse(100*sin(angle*PI/180)+720,100*cos(angle*PI/180)+349,10,10);
 
@@ -309,4 +310,16 @@ void MainWindow::paintEvent(QPaintEvent *event)
 //     painter.setBrush(QBrush(Qt::green, Qt::SolidPattern));
 //     painter.drawEllipse(200, 80, 400, 240);
 
+}
+
+void MainWindow::on_pushButton_hauteur_clicked()
+{
+     double hauteur = ui->lineEdit_hauteur->value();
+    QJsonObject jsonObject
+    {// pour minimiser le nombre de decimales( QString::number)
+        {"hauteurObstacle", QString::number(hauteur)}
+    };
+    QJsonDocument doc(jsonObject);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+    sendMessage(strJson);
 }
