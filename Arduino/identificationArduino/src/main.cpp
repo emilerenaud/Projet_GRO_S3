@@ -96,6 +96,9 @@ float hauteurObstacle = 1; // 1 cm float ou double ?
 double compteurTotalPulse = 0;
 
 double lastTime100ms = 0;
+
+float wattHeure = 0;
+float consommationWatt = 0;
 // bool doOnce = 1;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -122,6 +125,7 @@ void setPIDHigh(void);
 void disableMotorPID(void);
 void balancerPendule(void);
 
+void consommationEnergetique(void);
 /*---------------------------- fonctions "Main" -----------------------------*/
 
 void setup()
@@ -211,6 +215,7 @@ void loop()
   double timeNow = millis();
   if(timeNow - lastTime100ms >= 100)
   {
+    consommationEnergetique();
     lastTime100ms = timeNow;
     switch (etat)
     {
@@ -347,9 +352,8 @@ void sendMsg()
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
-  // env
-  // doc["voltage"] = AX_.getVoltage();
-  // doc["current"] = AX_.getCurrent();
+  doc["voltage"] = AX_.getVoltage();
+  doc["current"] = AX_.getCurrent();
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
   doc["inPulse"] = isInPulse_;
@@ -482,14 +486,6 @@ void PIDcommand_pendule(double cmd)
 void PIDgoalReached_motor()
 {
   PIDGoalReached = 1;
-  // disableMotorPID();
-  // if(etat == AtteindreHauteur && balancement == 1)
-  // {
-  //   // PIDGoalReached = 0;
-  //   balancerPendule();
-  // }
-    
-
 }
 
 void PIDgoalReached_pendule()
@@ -514,7 +510,7 @@ bool reculLimitSwitch()
     disableMotorPID();
     PIDGoalReached = 0;
     setupRecul = 0;
-    AX_.resetEncoder();
+    AX_.resetEncoder(0);
     currentDistance = 0;
     // reset compte de pulse
     return 0;
@@ -588,4 +584,10 @@ void balancerPendule()
     pid_1.disable();
     AX_.setMotorPWM(0, 0);
   }
+}
+
+void consommationEnergetique()
+{
+  wattHeure = AX_.getVoltage() * (AX_.getCurrent()/1000) * 1; // V * I * 1h
+  consommationWatt += wattHeure * (100/1000); // wattHeure * 100ms/1000
 }
