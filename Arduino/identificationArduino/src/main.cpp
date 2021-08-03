@@ -29,6 +29,8 @@
 #define START_SWITCH_PIN 6
 
 #define OFFSET_PENDULE 5
+
+#define DEBUG
 /*---------------------------- variables globales ---------------------------*/
 
 ArduinoX AX_;               // objet arduinoX
@@ -80,10 +82,16 @@ double vitessePendule = 0;
 double anglePendule = 0;
 
 double penduleGoal = 0.15;
-double distanceGoal = 0.1;
+// double distanceGoal = 0.3;
 bool PIDGoalReached = 0;
+
 int compteurBalance = 0;
 int balancement = 0;
+
+double currentDistance = 0;
+double distanceSapin = 0.1;
+double distanceObstacle = 0.5;
+float hauteurObstacle = 1; // 1 cm float ou double ?
 
 double compteurTotalPulse = 0;
 
@@ -179,7 +187,11 @@ void loop()
   }
   if (shouldSend_)
   {
+    #ifdef DEBUG
+    PIDmeasurement_pendule();
+    #else
     sendMsg();
+    #endif
   }
   if (shouldPulse_)
   {
@@ -216,10 +228,13 @@ void loop()
         }
         break;
       case AvancerObjet:
-        if(!avancer(0.1))
-          etat = PrendreObjet;
+        if(!avancer(distanceSapin))
+        {
+         etat = PrendreObjet;
+        }
         break;
       case PrendreObjet:
+        delay(2000);
         servo_.write(ANGLE_CLOSE_SERVO);
         etat = AtteindreHauteur;
         delay(3000);
@@ -229,15 +244,33 @@ void loop()
         if(balancement == 0)
         {
           Serial.println("Atteindre hauteur balancement 0");
+          PIDGoalReached = 0;
           disableMotorPID();
-          pid_1.setGoal(0.1);
+          // verifier que l'obstacle est pas trop proche.
+          pid_1.setGoal(distanceSapin + 0.1);
           pid_1.enable();
-          balancement = 1;
+          balancement ++;
+          
         }
-        else
+        else if(balancement == 1)
         {
-            setPIDHigh();
-            Serial.println("Goal achieved");
+          if(PIDGoalReached == 1)
+          {
+            currentDistance += 0.1;
+            balancement ++;
+            Serial.println("Changement balancement");
+            PIDGoalReached = 1; // Le mettre a 1 pour qu'il puisse starter l'oscillation
+          }
+        }
+        else if(balancement == 2)
+        {
+          Serial.println("Balancement");
+          setPIDHigh();
+          if(PIDGoalReached == 1)
+          {
+            PIDGoalReached = 0;
+            balancerPendule();
+          }
             //PIDGoalReached = 0;
         }
         /* code */
@@ -362,6 +395,12 @@ void readMsg()
   }
 
   // Analyse des éléments du message message
+  parse_msg = doc["hauteurObstacle"];
+  if (!parse_msg.isNull())
+  {
+    hauteurObstacle = doc["hauteurObstacle"].as<float>();
+  }
+
   parse_msg = doc["pulsePWM"];
   if (!parse_msg.isNull())
   {
@@ -397,7 +436,6 @@ void readMsg()
     }
     pid_1.setEpsilon(doc["setGoal"][3]);
     penduleGoal = doc["setGoal"][4];
-    // ajouter hauteurObstacle
     pid_1.enable();
   }
 }
@@ -445,11 +483,11 @@ void PIDgoalReached_motor()
 {
   PIDGoalReached = 1;
   // disableMotorPID();
-  if(etat == AtteindreHauteur && balancement == 1)
-  {
-    // PIDGoalReached = 0;
-    balancerPendule();
-  }
+  // if(etat == AtteindreHauteur && balancement == 1)
+  // {
+  //   // PIDGoalReached = 0;
+  //   balancerPendule();
+  // }
     
 
 }
@@ -476,6 +514,8 @@ bool reculLimitSwitch()
     disableMotorPID();
     PIDGoalReached = 0;
     setupRecul = 0;
+    AX_.resetEncoder();
+    currentDistance = 0;
     // reset compte de pulse
     return 0;
   }
@@ -499,6 +539,7 @@ bool avancer(double distance)
   if(PIDGoalReached == 1)
   {
     Serial.println("Avancer fini");
+    currentDistance += distance;
     setupAvancer = 0;
     PIDGoalReached = 0;
     disableMotorPID();
@@ -533,15 +574,15 @@ void balancerPendule()
   Serial.println("Balancer pendule");
   if(vitessePendule > 0)
   {
-    pid_1.setGoal(0);
+    pid_1.setGoal(currentDistance-0.1);
   }
   else
   {
-    pid_1.setGoal(distanceGoal);
+    pid_1.setGoal(currentDistance);
   }
   compteurBalance ++;
   pid_1.enable();
-  if(compteurBalance >= 15)
+  if(compteurBalance >= 5)
   {
     etat = PrendreObjet;
     pid_1.disable();
