@@ -37,4 +37,8 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
-DISTFILES +=
+DISTFILES += \
+    ee1f1852ad4506fa9174269fa8af87b8--cartoon-formula-.jpg
+
+RESOURCES += \
+    resource.qrc
