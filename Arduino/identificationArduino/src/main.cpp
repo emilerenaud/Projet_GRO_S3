@@ -139,6 +139,7 @@ void balancerPendule3(void);
 bool calculHauteurSapin(float hauteurApasser);
 
 void controlServo(int angle);
+void controlMoteur(float vitesse);
 
 void consommationEnergetique(void);
 void afficherEnergie(void);
@@ -169,10 +170,12 @@ void setup()
   etat = StartSequence;
 
   servo_.attach(8);
+  // Essayer de detacher le servo pour qu'il arrete de forcer.
   // servo_.write(ANGLE_OPEN_SERVO);
   servo_.write(ANGLE_CLOSE_SERVO);
+  servo_.detach();
   
-  // PID
+// PID
 // Initialisation du PID
     // Attache des fonctions de retour
     pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
@@ -197,6 +200,8 @@ void setup()
     pinMode(START_SWITCH_PIN,INPUT); // Peut-etre pas necessaire ?
     pinMode(LIMIT_SWITCH_PIN,INPUT_PULLUP);
     
+    AX_.setMotorPWM(0,0);
+    AX_.resetEncoder(0);
 }
 
 /* Boucle principale (infinie)*/
@@ -229,15 +234,7 @@ void loop()
   
   pid_1.run();
   pid_2.disable();
-  
-  // double timeNow2 = millis();
-  // if(timeNow2 - lastTime50ms >= 50)
-  // {
-  //   lastTime50ms = timeNow2;
-  //   float test = 0;
-  //   test = sin()
-  //   AX_.setMotorPWM(0,test);
-  // }
+
 
   double timeNow = millis();
   if(timeNow - lastTime100ms >= UPDATE_PERIODE)
@@ -532,6 +529,27 @@ void PIDcommand_motor(double cmd)
   AX_.setMotorPWM(0, -cmd);
 }
 
+void controlMoteur(float cmd)
+{
+  if(cmd > 1)
+  {
+    cmd = 1;
+  }
+  else if(cmd < -1)
+  {
+    cmd = -1;
+  }
+  else if(cmd < 0.1 && cmd > 0)
+  {
+    cmd = 0.1;
+  }
+  else if(cmd > -0.1 && cmd < 0)
+  {
+    cmd = -0.1;
+  }
+  AX_.setMotorPWM(0,cmd);
+}
+
 void PIDcommand_pendule(double cmd)
 {
 }
@@ -552,17 +570,19 @@ bool reculLimitSwitch()
   static bool setupRecul = 0;
   if(setupRecul == 0)
   {
-    setPIDslow();
-    pid_1.setGoal(-0.5);
-    pid_1.enable();
+    // setPIDslow();
+    // pid_1.setGoal(-1);
+    // pid_1.enable();
+    AX_.setMotorPWM(0,0.2);
     setupRecul = 1;
   }
   // reculer
   if(!digitalRead(LIMIT_SWITCH_PIN))
   {
-    disableMotorPID();
-    PIDGoalReached = 0;
+    // disableMotorPID();
+    // PIDGoalReached = 0;
     setupRecul = 0;
+    AX_.setMotorPWM(0,0);
     AX_.resetEncoder(0);
     currentDistance = 0;
     // reset compte de pulse
@@ -723,10 +743,10 @@ void balancerPendule3()
   static double compteurSin = 0;
   compteurSin += 0.5;
   penduleSinMoteur = 0.4*sin(compteurSin);
-  Serial.print("Compteur Sin : ");
-  Serial.print(compteurSin);
-  Serial.print("  Pendule Goal : ");
-  Serial.println(penduleSinMoteur);
+  // Serial.print("Compteur Sin : ");
+  // Serial.print(compteurSin);
+  // Serial.print("  Pendule Goal : ");
+  // Serial.println(penduleSinMoteur);
   AX_.setMotorPWM(0,penduleSinMoteur);
 }
 
@@ -734,8 +754,8 @@ bool calculHauteurSapin(float hauteurApasser)
 {
   // Serial.print("Angle : ");
   // Serial.print(anglePendule);
-  Serial.print("  Hauteur du sapin : ");
-  Serial.println(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
+  // Serial.print("  Hauteur du sapin : ");
+  // Serial.println(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
   double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
   if(hauteurSapin >= hauteurApasser)
   {
@@ -765,6 +785,8 @@ void afficherEnergie()
 
 void controlServo(int angle)
 {
+  servo_.attach(8);
   if(angle < 180 && angle > 0)
     servo_.write(angle);
+  servo_.detach();
 }
