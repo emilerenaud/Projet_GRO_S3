@@ -15,7 +15,7 @@
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD 115200        // Frequence de transmission serielle
-#define UPDATE_PERIODE 100 // Periode (ms) d'envoie d'etat general
+#define UPDATE_PERIODE 50 // Periode (ms) d'envoie d'etat general
 
 #define MAGPIN 32 // Port numerique pour electroaimant
 #define POTPIN A5 // Port analogique pour le potentiometre
@@ -101,6 +101,7 @@ double toleranceHauteurSapin = 5; // cm
 double compteurTotalPulse = 0;
 
 double lastTime100ms = 0;
+double lastTime50ms = 0;
 
 float wattHeure = 0;
 float consommationWatt = 0;
@@ -153,7 +154,7 @@ void setup()
       FALLING);
 
   // Chronometre envoie message
-  timerSendMsg_.setDelay(UPDATE_PERIODE);
+  timerSendMsg_.setDelay(200);
   timerSendMsg_.setCallback(timerCallback);
   timerSendMsg_.enable();
 
@@ -223,6 +224,15 @@ void loop()
   pid_1.run();
   pid_2.disable();
   
+  // double timeNow2 = millis();
+  // if(timeNow2 - lastTime50ms >= 50)
+  // {
+  //   lastTime50ms = timeNow2;
+  //   float test = 0;
+  //   test = sin()
+  //   AX_.setMotorPWM(0,test);
+  // }
+
   double timeNow = millis();
   if(timeNow - lastTime100ms >= UPDATE_PERIODE)
   {
@@ -266,22 +276,23 @@ void loop()
           // Serial.println("Atteindre hauteur balancement 0");
           PIDGoalReached = 0;
           disableMotorPID();
-          setPIDMed();
+          setPIDHigh();
           // verifier que l'obstacle est pas trop proche.
-          pid_1.setGoal(distanceSapin + (distanceOscillement/2));
+          pid_1.setGoal(distanceSapin + (distanceOscillement));
           // currentDistance -= (distanceOscillement/2);
           pid_1.enable();
           balancement ++;
-          
         }
         else if(balancement == 1)
         {
           if(PIDGoalReached == 1)
           {
-            currentDistance += distanceOscillement/2;
+            currentDistance += distanceOscillement;
             balancement ++;
             // Serial.println("Changement balancement");
             PIDGoalReached = 1; // Le mettre a 1 pour qu'il puisse starter l'oscillation
+            AX_.setMotorPWM(0,0);
+            delay(800);
             setPIDHigh();
           }
         }
@@ -301,8 +312,8 @@ void loop()
       case TraverserObstacle:
         balancement = 0;
         calculHauteurSapin(hauteurObstacle);
-        if(!avancer(0.6,1))
-          etat = StabiliserObjet;
+        // if(!avancer(0.6,1))
+        //   etat = StabiliserObjet;
         /* code */
         break;
 
@@ -576,7 +587,7 @@ bool avancer(double distance,int pidSpeed)
 
 void setPIDslow(void)
 {
-  pid_1.setGains(0.5,0.01,0.01); // surtout kp plus bas.
+  pid_1.setGains(0.5,0.02,0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
@@ -588,7 +599,7 @@ void setPIDMed(void)
 
 void setPIDHigh(void)
 {
-  pid_1.setGains(3,0.02,0); // surtout kp plus bas.
+  pid_1.setGains(3.5,0.02,0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
@@ -607,14 +618,14 @@ void balancerPendule()
   // Serial.print("");
   double goalTest = 0;
   PIDGoalReached = 0;
-  if(vitessePendule > 0)
+  if(vitessePendule > 0.1 && anglePendule > 0)
   {
     // goalTest = currentDistance + (distanceOscillement/2);
     goalTest = currentDistance - (distanceOscillement);
     pid_1.setGoal(goalTest);
     // currentDistance -= distanceOscillement;   // Verifier que qu'il revient a la bonne place
   }
-  else
+  else if(vitessePendule < 0.1 && anglePendule < 0)
   {
     // goalTest = currentDistance - (distanceOscillement/2);
     goalTest = currentDistance;
@@ -634,7 +645,7 @@ void balancerPendule()
     etat = TraverserObstacle;
     PIDGoalReached = 0;
     pid_1.disable();
-    // AX_.setMotorPWM(0, 0);
+    AX_.setMotorPWM(0, 0);
   }
 }
 
