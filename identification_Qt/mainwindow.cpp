@@ -275,7 +275,7 @@ void MainWindow::resetGraph()
 }
 void MainWindow::paintEvent(QPaintEvent *event)
 {
-    int x = 470 + ((ui->horizontalScrollBar->value()*500)/10);//((distance*500)/1.5);
+    int x = 470 + ((distance*500)/1.5);
     int y = 350;
     if(x < 0){x=470;}
     if(x > 970){x=970;}
@@ -302,9 +302,4 @@ void MainWindow::on_pushButton_hauteur_clicked()
     QJsonDocument doc(jsonObject);
     QString strJson(doc.toJson(QJsonDocument::Compact));
     sendMessage(strJson);
-}
-
-void MainWindow::on_horizontalScrollBar_sliderMoved(int position)
-{
-     update();
 }

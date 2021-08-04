@@ -20,7 +20,6 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QScrollBar>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTextBrowser>
 #include <QtWidgets/QWidget>
@@ -68,7 +67,6 @@ public:
     QFrame *line_4;
     QLabel *label_12;
     QLabel *label_flash;
-    QScrollBar *horizontalScrollBar;
 
     void setupUi(QMainWindow *MainWindow)
     {
@@ -215,13 +213,6 @@ public:
         label_flash->setObjectName(QString::fromUtf8("label_flash"));
         label_flash->setGeometry(QRect(460, 300, 101, 61));
         label_flash->setLineWidth(0);
-        horizontalScrollBar = new QScrollBar(centralWidget);
-        horizontalScrollBar->setObjectName(QString::fromUtf8("horizontalScrollBar"));
-        horizontalScrollBar->setGeometry(QRect(500, 440, 451, 20));
-        horizontalScrollBar->setMaximum(10);
-        horizontalScrollBar->setValue(0);
-        horizontalScrollBar->setTracking(true);
-        horizontalScrollBar->setOrientation(Qt::Horizontal);
         MainWindow->setCentralWidget(centralWidget);
 
         retranslateUi(MainWindow);
