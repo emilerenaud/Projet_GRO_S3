@@ -107,6 +107,10 @@ double lastTime50ms = 0;
 
 float wattHeure = 0;
 float consommationWatt = 0;
+
+double angleNesessaire =0;
+
+
 // bool doOnce = 1;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -281,8 +285,8 @@ void loop()
           disableMotorPID();
           setPIDHigh();
           // verifier que l'obstacle est pas trop proche.
-          //pid_1.setGoal(distanceSapin + (distanceOscillement));
-          // currentDistance -= (distanceOscillement/2);
+          pid_1.setGoal(distanceObstacle - (0.45*(sin(angleNesessaire*((2*PI)/360)))));
+          currentDistance -= (distanceOscillement/2);
          // pid_1.enable();
           balancement ++;
         }
@@ -582,8 +586,7 @@ bool reculLimitSwitch()
     // disableMotorPID();
     // PIDGoalReached = 0;
     setupRecul = 0;
-    AX_.setMotorPWM(0,0);
-    AX_.resetEncoder(0);
+    distanceObstacle = -1*(0.14*32*PI*AX_.readResetEncoder(0))/(3200.0*24.0);
     currentDistance = 0;
     // reset compte de pulse
     return 0;
@@ -754,10 +757,14 @@ bool calculHauteurSapin(float hauteurApasser)
 {
   // Serial.print("Angle : ");
   // Serial.print(anglePendule);
-  // Serial.print("  Hauteur du sapin : ");
-  // Serial.println(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
-  double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
-  if(hauteurSapin >= hauteurApasser)
+  Serial.print("  Hauteur du sapin : ");
+  Serial.println(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
+ // double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
+
+  angleNesessaire = (acos((hauteurApasser+ toleranceHauteurSapin)/LONGUEUR_PENDULE)* 1000 / 57296);
+
+
+  if(anglePendule >= angleNesessaire)
   {
     return 0;
   }
