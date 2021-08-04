@@ -14,7 +14,7 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
     chart_.setTitle("Donnees brutes");
     chart_.legend()->hide();
     chart_.addSeries(&series_);
-
+    //pendule_ = ui->widget_2();
     // Fonctions de connections events/slots
     connectTimers(updateRate);
     connectButtons();
@@ -81,7 +81,9 @@ void MainWindow::receiveFromSerial(QString msg){
             Kp = jsonObj["Kp"].toDouble();
             Ki = jsonObj["Ki"].toDouble();
             Kd = jsonObj["Kd"].toDouble();
-
+            angle = jsonObj["potVex"].toDouble();
+            distance = jsonObj["measurements"].toDouble();
+            update();
             // Si les donnees doivent etre enregistrees
             if(record){
                 writer_->write(jsonObj);
@@ -101,6 +103,7 @@ void MainWindow::connectTimers(int updateRate){
 void MainWindow::connectSerialPortRead(){
     // Fonction de connection au message de la classe (serialProtocol)
     connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(receiveFromSerial(QString)));
+
 }
 
 void MainWindow::connectButtons(){
@@ -258,6 +261,7 @@ void MainWindow::onMessageReceived(QString msg){
     // Fonction appelee lors de reception de message
     // Decommenter la ligne suivante pour deverminage
     // qDebug().noquote() << "Message du Arduino: " << msg;
+
 }
 
 void MainWindow::onPeriodicUpdate(){
@@ -268,4 +272,34 @@ void MainWindow::resetGraph()
 {
     //chart_.removeAllSeries();
     series_.clear();
+}
+void MainWindow::paintEvent(QPaintEvent *event)
+{
+    int x = 470 + ((distance*500)/1.5);
+    int y = 350;
+    if(x < 0){x=470;}
+    if(x > 970){x=970;}
+    //create a QPainter and pass a pointer to the device.
+    //A paint device can be a QWidget, a QPixmap or a QImage
+    QPainter painter(this);
+    ui->label_flash->move(x-50,y-60);
+    //a simple line
+    painter.setPen(QPen(Qt::black, 3, Qt::SolidLine, Qt::RoundCap));
+    painter.setBrush(Qt::black);
+    painter.drawLine(x,y,100*sin(angle*PI/180)+x,100*cos(angle*PI/180)+y);
+    painter.drawEllipse(100*sin(angle*PI/180)+(x-5),100*cos(angle*PI/180)+(y-1),10,10);
+
+
+}
+
+void MainWindow::on_pushButton_hauteur_clicked()
+{
+     double hauteur = ui->lineEdit_hauteur->text().toDouble();
+    QJsonObject jsonObject
+    {// pour minimiser le nombre de decimales( QString::number)
+        {"hauteurObstacle", QString::number(hauteur)}
+    };
+    QJsonDocument doc(jsonObject);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+    sendMessage(strJson);
 }

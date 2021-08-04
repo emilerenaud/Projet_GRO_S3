@@ -14,9 +14,13 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts>
 
+#include <QPainter>
+
 // Propres librairies
 #include "csvwriter.h"
 #include "serialprotocol.h"
+
+#define PI 3.14159265
 
 // Classe definissant l'application
 namespace Ui {
@@ -52,6 +56,10 @@ private slots:
     void getPID();
     void resetGraph();
 
+    void on_pushButton_hauteur_clicked();
+
+    void on_horizontalScrollBar_sliderMoved(int position);
+
 private:
     void connectTimers(int updateRate);
     void connectButtons();
@@ -74,12 +82,13 @@ private:
     QLineSeries series_;
     QLineSeries seriesGoal_;
     QChart chart_;
-
+    void paintEvent(QPaintEvent *event);
 
     double Kp = 0;
     double Ki = 0;
     double Kd = 0;
-
+    double angle = 50;
+    double distance = 0.75;
 
 protected:
     Ui::MainWindow *ui;
