@@ -587,13 +587,13 @@ bool avancer(double distance,int pidSpeed)
 
 void setPIDslow(void)
 {
-  pid_1.setGains(0.5,0.02,0); // surtout kp plus bas.
+  pid_1.setGains(0.8,0.02,0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
 void setPIDMed(void)
 {
-  pid_1.setGains(1.5,0.02,0.01); // surtout kp plus bas.
+  pid_1.setGains(1.5,0.02,0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
@@ -613,29 +613,31 @@ void disableMotorPID()
 
 void balancerPendule()
 {
-  // Serial.print("Balancer pendule : ");
+  Serial.print("Balancer pendule : ");
   // Serial.println(currentDistance);
   // Serial.print("");
   double goalTest = 0;
   PIDGoalReached = 0;
-  if(vitessePendule > 0.1 && anglePendule > 10)
+  if(vitessePendule > 0.05 && anglePendule > 5)
   {
     // goalTest = currentDistance + (distanceOscillement/2);
-    goalTest = currentDistance - (distanceOscillement);
+    Serial.println("One side");
+    goalTest = currentDistance + (distanceOscillement);
     pid_1.setGoal(goalTest);
     // currentDistance -= distanceOscillement;   // Verifier que qu'il revient a la bonne place
   }
-  else if(vitessePendule < -0.1 && anglePendule < -10)
+  else if(vitessePendule < -0.05 && anglePendule < -5)
   {
-    // goalTest = currentDistance - (distanceOscillement/2);
+    Serial.println("Other side");
     goalTest = currentDistance;
+    // goalTest = currentDistance - (distanceOscillement/2.0);
     pid_1.setGoal(goalTest);
     // currentDistance += distanceOscillement;
   }
-  Serial.print("vitesse pendule : ");
-  Serial.println(vitessePendule);
-  //Serial.print(" Gaol test = ");
-  //Serial.println(goalTest);
+  // Serial.print("vitesse pendule : ");
+  // Serial.println(vitessePendule);
+  Serial.print(" Gaol test = ");
+  Serial.println(goalTest);
 
   compteurBalance ++;
   pid_1.enable();
@@ -662,6 +664,7 @@ void balancerPendule2()
       pid_1.setGoal(goalTest);
       compteurBalance ++;
       anglePendule ++;
+      changeDeBord ++;
     }
   }
   else
@@ -672,6 +675,7 @@ void balancerPendule2()
       pid_1.setGoal(goalTest);
       compteurBalance ++;
       anglePendule ++;
+      changeDeBord ++;
     }
   }
 
