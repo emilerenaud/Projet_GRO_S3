@@ -31,7 +31,7 @@
 #define OFFSET_PENDULE 2
 #define LONGUEUR_PENDULE 40 // cm
 
-#define NOMBRE_DE_COUP_PENDULE 6
+#define NOMBRE_DE_COUP_PENDULE 7
 // #define DEBUG
 /*---------------------------- variables globales ---------------------------*/
 
@@ -292,7 +292,7 @@ void loop()
             // Serial.println("Changement balancement");
             PIDGoalReached = 1; // Le mettre a 1 pour qu'il puisse starter l'oscillation
             AX_.setMotorPWM(0,0);
-            delay(800);
+            delay(1000);
             setPIDHigh();
           }
         }
@@ -505,10 +505,10 @@ void PIDcommand_motor(double cmd)
     cmd = -1;
   }
   //Serial.print("FUCK");
-  Serial.print("cmd : ");
-  Serial.print(cmd);
-  Serial.print(" Goal : ");
-  Serial.println(pid_1.getGoal());
+  // Serial.print("cmd : ");
+  // Serial.print(cmd);
+  // Serial.print(" Goal : ");
+  // Serial.println(pid_1.getGoal());
   AX_.setMotorPWM(0, -cmd);
 }
 
@@ -599,7 +599,7 @@ void setPIDMed(void)
 
 void setPIDHigh(void)
 {
-  pid_1.setGains(3.5,0.02,0); // surtout kp plus bas.
+  pid_1.setGains(3,0.02,0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
@@ -618,14 +618,14 @@ void balancerPendule()
   // Serial.print("");
   double goalTest = 0;
   PIDGoalReached = 0;
-  if(vitessePendule > 0.1 && anglePendule > 0)
+  if(vitessePendule > 0.1 && anglePendule > 10)
   {
     // goalTest = currentDistance + (distanceOscillement/2);
     goalTest = currentDistance - (distanceOscillement);
     pid_1.setGoal(goalTest);
     // currentDistance -= distanceOscillement;   // Verifier que qu'il revient a la bonne place
   }
-  else if(vitessePendule < 0.1 && anglePendule < 0)
+  else if(vitessePendule < -0.1 && anglePendule < -10)
   {
     // goalTest = currentDistance - (distanceOscillement/2);
     goalTest = currentDistance;
@@ -633,19 +633,19 @@ void balancerPendule()
     // currentDistance += distanceOscillement;
   }
   Serial.print("vitesse pendule : ");
-  Serial.print(vitessePendule);
-  Serial.print(" Gaol test = ");
-  Serial.println(goalTest);
+  Serial.println(vitessePendule);
+  //Serial.print(" Gaol test = ");
+  //Serial.println(goalTest);
 
   compteurBalance ++;
   pid_1.enable();
   if(compteurBalance >= NOMBRE_DE_COUP_PENDULE)
   {
-    Serial.println("fini de compter fok");
-    etat = TraverserObstacle;
-    PIDGoalReached = 0;
-    pid_1.disable();
-    AX_.setMotorPWM(0, 0);
+    //Serial.println("fini de compter fok");
+    //etat = TraverserObstacle;
+    //PIDGoalReached = 0;
+    //pid_1.disable();
+    //AX_.setMotorPWM(0, 0);
   }
 }
 
