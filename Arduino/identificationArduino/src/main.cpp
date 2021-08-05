@@ -53,6 +53,7 @@ enum etats
   AtteindreHauteur,
   TraverserObstacle,
   StabiliserObjet,
+  RetablirDistance,
   LacherObjet,
   Retour,
   TunePid
@@ -96,7 +97,7 @@ double penduleSinMoteur = 0;
 double currentDistance = 0;
 
 double distanceSapin = 0.2;
-double distanceObstacle = 0.5;
+double distanceObstacle = 0;
 double distanceBac = 1.2;
 float hauteurObstacle = 3;        // 1 cm float ou double ?
 double toleranceHauteurSapin = 2; // cm
@@ -114,6 +115,8 @@ double angleNesessaire = 0;
 bool ocillation = false;
 bool angleArriere = false;
 bool vitesseMaxok = false;
+
+int compteurArreterPendule = 0;
 // bool doOnce = 1;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -268,6 +271,7 @@ void loop()
       if (!reculLimitSwitch())
       {
         etat = AvancerObjet;
+        controlServo(ANGLE_OPEN_SERVO);
         delay(1000);
       }
       break;
@@ -292,10 +296,10 @@ void loop()
         disableMotorPID();
         setPIDslow();
         // verifier que l'obstacle est pas trop proche.
-        calculHauteurSapin(2);
+        calculHauteurSapin(hauteurObstacle);
+        // Serial.print("Hauteur obstacle : ");
+        // Serial.print(hauteurObstacle);
         double test1 = (0.45 * (sin(angleNesessaire * ((2.0 * PI) / 360.0))));
-        Serial.print(" Equation ");
-        Serial.println(test1);
         pid_1.setGoal(distanceObstacle - test1);
 
         // Serial.println(pid_1.getGoal());
@@ -313,7 +317,6 @@ void loop()
           PIDGoalReached = 0;
         }
       }
-      /* code */
       break;
     case AtteindreHauteur:
       if (!ocillation)
@@ -322,7 +325,7 @@ void loop()
       }
       if(angleArriere)
       { 
-        Serial.println("angle ok");
+        // Serial.println("angle ok");
         if(penduleSinMoteur < -0.39)
         {
           vitesseMaxok = true;
@@ -330,10 +333,9 @@ void loop()
       }
       if(vitesseMaxok)
       {
-        Serial.println("Vitesse max ok");
+        // Serial.println("Vitesse max ok");
         if(penduleSinMoteur > -0.2)
         {
-
           // controlMoteur(0);
           controlMoteur(-0.25);
           ocillation = true;
@@ -341,25 +343,30 @@ void loop()
       }
       if (anglePendule < (-1 * (angleNesessaire + 2)) && ocillation)
       {
-        Serial.println("ANGLE CORRECT");
+        // Serial.println("ANGLE CORRECT");
         setPIDMed();
         // setPIDslow();
         PIDGoalReached = 0;
         pid_1.setGoal(distanceBac);
         pid_1.enable();
         etat = TraverserObstacle;
+        ocillation = false;
+        angleArriere = false;
+        vitesseMaxok = false;
       }
       if (anglePendule > (angleNesessaire + 2))
       {
         // ocillation = true;
         angleArriere = true;
-        // controlMoteur(0);
       }
       break;
     case TraverserObstacle:
       if (PIDGoalReached == 1)
       {
+        PIDGoalReached = 0;
+        etat = StabiliserObjet;
         controlMoteur(0);
+        delay(500);
       }
       // balancement = 0;
       // calculHauteurSapin(hauteurObstacle);
@@ -369,14 +376,42 @@ void loop()
       break;
 
     case StabiliserObjet:
+      if(vitessePendule < 0)
+      {
+        controlMoteur(-0.25);
+      }
+      else
+      {
+        controlMoteur(0.25);
+      }
+      compteurArreterPendule ++;
+      if(compteurArreterPendule >= 20)
+      {
+        controlMoteur(0);
+        etat = RetablirDistance;
+        compteurArreterPendule = 0;
+      }
       /* code */
       // pid_1.disable();
       // pid_2.setGoal(0);
       break;
-
+    case RetablirDistance:
+      PIDGoalReached = 0;
+      setPIDslow();
+      pid_1.setGoal(distanceBac);
+      pid_1.enable();
+      etat = LacherObjet;
+      break;
     case LacherObjet:
       /* code */
-      controlServo(ANGLE_OPEN_SERVO);
+      if(PIDGoalReached == 1)
+      {
+        controlMoteur(0);
+        PIDGoalReached = 0;
+        controlServo(ANGLE_OPEN_SERVO);
+        etat = ReculLimitSwitch;
+      }
+      
       break;
 
     case Retour:
@@ -436,6 +471,8 @@ void sendMsg()
   doc["measurements"] = PIDmeasurement_lineaire();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent();
+  doc["Wattheure"] = wattHeure;
+  doc["hauteurObstacle"] = hauteurObstacle;
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
   doc["inPulse"] = isInPulse_;
@@ -455,9 +492,9 @@ void sendMsg()
   doc["Kd"] = pid_1.getKd();
 
   // Serialisation
-  serializeJson(doc, Serial1);
+  serializeJson(doc, Serial);
   // Envoit
-  Serial1.println();
+  Serial.println();
   shouldSend_ = false;
 }
 
@@ -485,6 +522,7 @@ void readMsg()
   if (!parse_msg.isNull())
   {
     hauteurObstacle = doc["hauteurObstacle"].as<float>();
+    // Serial.println(hauteurObstacle);
   }
 
   parse_msg = doc["pulsePWM"];
@@ -507,6 +545,7 @@ void readMsg()
   parse_msg = doc["setGoal"];
   if (!parse_msg.isNull())
   {
+    // Serial.println("test pid");
     pid_1.disable();
     if (doc["setGoal"][0] != pid_1.getKp())
     {
@@ -563,10 +602,10 @@ void PIDcommand_motor(double cmd)
     cmd = -0.1;
   }
   //Serial.print("FUCK");
-  Serial.print("cmd : ");
-  Serial.print(cmd);
-  Serial.print(" Goal : ");
-  Serial.println(pid_1.getGoal());
+  // Serial.print("cmd : ");
+  // Serial.print(cmd);
+  // Serial.print(" Goal : ");
+  // Serial.println(pid_1.getGoal());
   AX_.setMotorPWM(0, -cmd);
 }
 
@@ -625,8 +664,15 @@ bool reculLimitSwitch()
     {
       controlMoteur(0);
       setupRecul = 0;
-      distanceObstacle = -1 * (0.14 * 32 * PI * AX_.readResetEncoder(0)) / (3200.0 * 24.0);
-      distanceObstacle -= 0.06;
+      if(distanceObstacle == 0)
+      {
+        distanceObstacle = -1 * (0.14 * 32 * PI * AX_.readResetEncoder(0)) / (3200.0 * 24.0);
+        distanceObstacle -= 0.06;
+      }
+      else
+      {
+        AX_.resetEncoder(0);
+      }
       currentDistance = 0;
     }
     // disableMotorPID();
@@ -699,7 +745,7 @@ void disableMotorPID()
 
 void balancerPendule()
 {
-  Serial.print("Balancer pendule : ");
+  // Serial.print("Balancer pendule : ");
   // Serial.println(currentDistance);
   // Serial.print("");
   double goalTest = 0;
@@ -707,7 +753,7 @@ void balancerPendule()
   if (vitessePendule > 0.05 && anglePendule > 15)
   {
     // goalTest = currentDistance + (distanceOscillement/2);
-    Serial.println("One side");
+    // Serial.println("One side");
     goalTest = currentDistance + (distanceOscillement);
     pid_1.setGoal(goalTest);
     AX_.setMotorPWM(0, 0.4);
@@ -715,7 +761,7 @@ void balancerPendule()
   }
   else if (vitessePendule < -0.05 && anglePendule < -15)
   {
-    Serial.println("Other side");
+    // Serial.println("Other side");
     goalTest = currentDistance;
     // goalTest = currentDistance - (distanceOscillement/2.0);
     pid_1.setGoal(goalTest);
@@ -724,8 +770,8 @@ void balancerPendule()
   }
   // Serial.print("vitesse pendule : ");
   // Serial.println(vitessePendule);
-  Serial.print(" Gaol test = ");
-  Serial.println(goalTest);
+  // Serial.print(" Gaol test = ");
+  // Serial.println(goalTest);
 
   compteurBalance++;
   //pid_1.enable();
@@ -767,16 +813,16 @@ void balancerPendule2()
     }
   }
 
-  Serial.print("angle pendule : ");
-  Serial.print(anglePendule);
-  Serial.print(" Gaol test = ");
-  Serial.println(goalTest);
+  // Serial.print("angle pendule : ");
+  // Serial.print(anglePendule);
+  // Serial.print(" Gaol test = ");
+  // Serial.println(goalTest);
 
   //pid_1.enable();
 
   if (compteurBalance >= NOMBRE_DE_COUP_PENDULE)
   {
-    Serial.println("fini de compter fok");
+    // Serial.println("fini de compter fok");
     etat = TraverserObstacle;
     PIDGoalReached = 0;
     pid_1.disable();
@@ -791,8 +837,8 @@ void balancerPendule3()
   penduleSinMoteur = 0.4 * sin(compteurSin);
   // Serial.print("Compteur Sin : ");
   // Serial.print(compteurSin);
-  Serial.print("  Pendule SIN : ");
-  Serial.println(penduleSinMoteur);
+  // Serial.print("  Pendule SIN : ");
+  // Serial.println(penduleSinMoteur);
   AX_.setMotorPWM(0, penduleSinMoteur);
 }
 
@@ -800,13 +846,13 @@ bool calculHauteurSapin(float hauteurApasser)
 {
   // Serial.print("Angle : ");
   // Serial.print(anglePendule);
-  Serial.print("  Hauteur du sapin : ");
-  Serial.print(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
+  // Serial.print("  Hauteur du sapin : ");
+  // Serial.print(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
   // double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
   angleNesessaire = acos(((LONGUEUR_PENDULE - (hauteurApasser + toleranceHauteurSapin)) / LONGUEUR_PENDULE));
   angleNesessaire = angleNesessaire * 57296 / 1000;
-  Serial.print("  Angle necessaire : ");
-  Serial.println(angleNesessaire);
+  // Serial.print("  Angle necessaire : ");
+  // Serial.println(angleNesessaire);
   if (anglePendule >= angleNesessaire)
   {
     return 0;
@@ -838,7 +884,8 @@ void controlServo(int angle)
   servo_.attach(8);
   if (angle < 180 && angle > 0)
   {
+    servo_.write(angle);
   }
-  // servo_.write(angle);
+  // 
   // servo_.detach();
 }
