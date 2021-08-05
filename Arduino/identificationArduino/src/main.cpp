@@ -36,12 +36,12 @@
 // #define DEBUG
 /*---------------------------- variables globales ---------------------------*/
 
-ArduinoX AX_;               // objet arduinoX
-MegaServo servo_;           // objet servomoteur
-VexQuadEncoder vexEncoder_; // objet encodeur vex
-IMU9DOF imu_;               // objet imu
-PIDCustom pid_1(0);                  // objet PID pour le moteur
-PIDCustom pid_2(sizeof(float) * 3);                  // objet PID pour le pendule
+ArduinoX AX_;                       // objet arduinoX
+MegaServo servo_;                   // objet servomoteur
+VexQuadEncoder vexEncoder_;         // objet encodeur vex
+IMU9DOF imu_;                       // objet imu
+PIDCustom pid_1(0);                 // objet PID pour le moteur
+PIDCustom pid_2(sizeof(float) * 3); // objet PID pour le pendule
 
 enum etats
 {
@@ -49,6 +49,7 @@ enum etats
   ReculLimitSwitch,
   AvancerObjet,
   PrendreObjet,
+  AtteindreDepartOscillation,
   AtteindreHauteur,
   TraverserObstacle,
   StabiliserObjet,
@@ -74,8 +75,6 @@ float Axyz[3]; // tableau pour accelerometre
 float Gxyz[3]; // tableau pour giroscope
 float Mxyz[3]; // tableau pour magnetometre
 
-
-
 bool first_scan = true;
 bool pidFini = false;
 
@@ -91,14 +90,16 @@ bool PIDGoalReached = 0;
 int compteurBalance = 0;
 int balancement = 0;
 double distanceOscillement = 0.15;
+int deplacementDepartOscillation = 0;
 double penduleSinMoteur = 0;
 
 double currentDistance = 0;
 
 double distanceSapin = 0.2;
 double distanceObstacle = 0.5;
-float hauteurObstacle = 1; // 1 cm float ou double ?
-double toleranceHauteurSapin = 5; // cm
+double distanceBac = 1.2;
+float hauteurObstacle = 3;        // 1 cm float ou double ?
+double toleranceHauteurSapin = 2; // cm
 
 double compteurTotalPulse = 0;
 
@@ -108,9 +109,11 @@ double lastTime50ms = 0;
 float wattHeure = 0;
 float consommationWatt = 0;
 
-double angleNesessaire =0;
+double angleNesessaire = 0;
 
-
+bool ocillation = false;
+bool angleArriere = false;
+bool vitesseMaxok = false;
 // bool doOnce = 1;
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -131,7 +134,7 @@ void PIDgoalReached_pendule();
 
 // Fonctions
 bool reculLimitSwitch(void);
-bool avancer(double distance,int pidSpeed);
+bool avancer(double distance, int pidSpeed);
 void setPIDslow(void);
 void setPIDMed(void);
 void setPIDHigh(void);
@@ -151,7 +154,7 @@ void afficherEnergie(void);
 
 void setup()
 {
-  Serial.begin(BAUD);     // initialisation de la communication serielle
+  Serial.begin(BAUD); // initialisation de la communication serielle
   Serial1.begin(BAUD);
 
   AX_.init();             // initialisation de la carte ArduinoX
@@ -177,35 +180,35 @@ void setup()
   // Essayer de detacher le servo pour qu'il arrete de forcer.
   // servo_.write(ANGLE_OPEN_SERVO);
   servo_.write(ANGLE_CLOSE_SERVO);
-  servo_.detach();
-  
-// PID
-// Initialisation du PID
-    // Attache des fonctions de retour
-    pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
-    pid_1.setCommandFunc(PIDcommand_motor);
-    pid_1.setAtGoalFunc(PIDgoalReached_motor);
-    pid_1.setEpsilon(0.02);
-    pid_1.setGains(0.5,0.01,0);
-    pid_1.setPeriod(UPDATE_PERIODE);
-    pid_1.disable();
-    // pid_1.enable();
-    // pid_1.setGoal(0.1);
-    // pid_1.setIntegralLim(1);
+  // servo_.detach();
 
-    // Attache des fonctions de retour
-    pid_2.setMeasurementFunc(PIDmeasurement_pendule);
-    pid_2.setCommandFunc(PIDcommand_pendule);
-    pid_2.setAtGoalFunc(PIDgoalReached_pendule);
-    pid_2.setEpsilon(0.01);
-    pid_2.setPeriod(50);
-    //pid_2.setIntegralLim(1);
-    // AX_.setMotorPWM(0,0.4);
-    pinMode(START_SWITCH_PIN,INPUT); // Peut-etre pas necessaire ?
-    pinMode(LIMIT_SWITCH_PIN,INPUT_PULLUP);
-    
-    AX_.setMotorPWM(0,0);
-    AX_.resetEncoder(0);
+  // PID
+  // Initialisation du PID
+  // Attache des fonctions de retour
+  pid_1.setMeasurementFunc(PIDmeasurement_lineaire);
+  pid_1.setCommandFunc(PIDcommand_motor);
+  pid_1.setAtGoalFunc(PIDgoalReached_motor);
+  pid_1.setEpsilon(0.02);
+  pid_1.setGains(0.5, 0.01, 0);
+  pid_1.setPeriod(UPDATE_PERIODE);
+  pid_1.disable();
+  // pid_1.enable();
+  // pid_1.setGoal(0.1);
+  // pid_1.setIntegralLim(1);
+
+  // Attache des fonctions de retour
+  pid_2.setMeasurementFunc(PIDmeasurement_pendule);
+  pid_2.setCommandFunc(PIDcommand_pendule);
+  pid_2.setAtGoalFunc(PIDgoalReached_pendule);
+  pid_2.setEpsilon(0.01);
+  pid_2.setPeriod(50);
+  //pid_2.setIntegralLim(1);
+  // AX_.setMotorPWM(0,0.4);
+  pinMode(START_SWITCH_PIN, INPUT); // Peut-etre pas necessaire ?
+  pinMode(LIMIT_SWITCH_PIN, INPUT_PULLUP);
+
+  AX_.setMotorPWM(0, 0);
+  AX_.resetEncoder(0);
 }
 
 /* Boucle principale (infinie)*/
@@ -219,11 +222,11 @@ void loop()
   }
   if (shouldSend_)
   {
-    #ifdef DEBUG
+#ifdef DEBUG
     PIDmeasurement_pendule();
-    #else
+#else
     sendMsg();
-    #endif
+#endif
   }
   if (shouldPulse_)
   {
@@ -235,13 +238,12 @@ void loop()
   timerPulse_.update();
 
   // mise à jour du PID
-  
+
   pid_1.run();
   pid_2.disable();
 
-
   double timeNow = millis();
-  if(timeNow - lastTime100ms >= UPDATE_PERIODE)
+  if (timeNow - lastTime100ms >= UPDATE_PERIODE)
   {
     lastTime100ms = timeNow;
     consommationEnergetique();
@@ -249,109 +251,145 @@ void loop()
     // Serial.println(map(analogRead(POTPIN), 96,934,-95,85)+OFFSET_PENDULE);
     switch (etat)
     {
-      case StartSequence:
-        if(!digitalRead(LIMIT_SWITCH_PIN))
+    case StartSequence:
+      if (!digitalRead(LIMIT_SWITCH_PIN))
+      {
+        delay(20);
+        while (!digitalRead(LIMIT_SWITCH_PIN))
         {
           etat = ReculLimitSwitch;
           controlServo(ANGLE_OPEN_SERVO);
-          // servo_.write(ANGLE_OPEN_SERVO); // just in case
         }
-        break;
-      case ReculLimitSwitch:
-        if(!reculLimitSwitch())
-        {
-          etat = AvancerObjet;
-          delay(1000);
-        }
-        break;
-      case AvancerObjet:
-        if(!avancer(distanceSapin,0))
-        {
-         etat = PrendreObjet;
-        }
-        break;
-      case PrendreObjet:
+        delay(500);
+        // servo_.write(ANGLE_OPEN_SERVO); // just in case
+      }
+      break;
+    case ReculLimitSwitch:
+      if (!reculLimitSwitch())
+      {
+        etat = AvancerObjet;
         delay(1000);
-        controlServo(ANGLE_CLOSE_SERVO);
-        etat = AtteindreHauteur;
-        delay(3000);
-        break;
+      }
+      break;
+    case AvancerObjet:
+      if (!avancer(distanceSapin, 0))
+      {
+        etat = PrendreObjet;
+      }
+      break;
+    case PrendreObjet:
+      delay(500);
+      controlServo(ANGLE_CLOSE_SERVO);
+      etat = AtteindreDepartOscillation;
+      delay(1000);
+      break;
 
-      case AtteindreHauteur:
-        if(balancement == 0)
+    case AtteindreDepartOscillation:
+      if (deplacementDepartOscillation == 0)
+      {
+        // Serial.println("Atteindre hauteur balancement 0");
+        PIDGoalReached = 0;
+        disableMotorPID();
+        setPIDslow();
+        // verifier que l'obstacle est pas trop proche.
+        calculHauteurSapin(2);
+        double test1 = (0.45 * (sin(angleNesessaire * ((2.0 * PI) / 360.0))));
+        Serial.print(" Equation ");
+        Serial.println(test1);
+        pid_1.setGoal(distanceObstacle - test1);
+
+        // Serial.println(pid_1.getGoal());
+        pid_1.enable();
+        currentDistance -= (distanceOscillement / 2);
+        deplacementDepartOscillation++;
+      }
+      else if (deplacementDepartOscillation == 1)
+      {
+        // balancement ++;
+        if (PIDGoalReached == 1)
         {
-          // Serial.println("Atteindre hauteur balancement 0");
+          etat = AtteindreHauteur;
+          deplacementDepartOscillation = 0;
           PIDGoalReached = 0;
-          disableMotorPID();
-          setPIDHigh();
-          // verifier que l'obstacle est pas trop proche.
-          pid_1.setGoal(distanceObstacle - (0.45*(sin(angleNesessaire*((2*PI)/360)))));
-          currentDistance -= (distanceOscillement/2);
-         // pid_1.enable();
-          balancement ++;
         }
-        else if(balancement == 1)
+      }
+      /* code */
+      break;
+    case AtteindreHauteur:
+      if (!ocillation)
+      {
+        balancerPendule3();
+      }
+      if(angleArriere)
+      { 
+        Serial.println("angle ok");
+        if(penduleSinMoteur < -0.39)
         {
-          AX_.setMotorPWM(0,-0.25);
-          delay(300);
-          AX_.setMotorPWM(0,0);
-          delay(300);
-          balancement ++;
-          if(PIDGoalReached == 1)
-          {
-            currentDistance += distanceOscillement;
-            balancement ++;
-            // Serial.println("Changement balancement");
-            PIDGoalReached = 1; // Le mettre a 1 pour qu'il puisse starter l'oscillation
-            AX_.setMotorPWM(0,0);
-            delay(1000);
-            setPIDHigh();
-          }
+          vitesseMaxok = true;
         }
-        else if(balancement == 2)
+      }
+      if(vitesseMaxok)
+      {
+        Serial.println("Vitesse max ok");
+        if(penduleSinMoteur > -0.2)
         {
-          // Serial.println("Balancement");
-          // if(PIDGoalReached == 1)
-          // {
-            // PIDGoalReached = 0;
-            // balancerPendule();
-            balancerPendule3();
-          // }
-            //PIDGoalReached = 0;
+
+          // controlMoteur(0);
+          controlMoteur(-0.25);
+          ocillation = true;
         }
-        /* code */
-        break;
+      }
+      if (anglePendule < (-1 * (angleNesessaire + 2)) && ocillation)
+      {
+        Serial.println("ANGLE CORRECT");
+        setPIDMed();
+        // setPIDslow();
+        PIDGoalReached = 0;
+        pid_1.setGoal(distanceBac);
+        pid_1.enable();
+        etat = TraverserObstacle;
+      }
+      if (anglePendule > (angleNesessaire + 2))
+      {
+        // ocillation = true;
+        angleArriere = true;
+        // controlMoteur(0);
+      }
+      break;
+    case TraverserObstacle:
+      if (PIDGoalReached == 1)
+      {
+        controlMoteur(0);
+      }
+      // balancement = 0;
+      // calculHauteurSapin(hauteurObstacle);
+      // if(!avancer(0.6,1))
+      //   etat = StabiliserObjet;
+      /* code */
+      break;
 
-      case TraverserObstacle:
-        balancement = 0;
-        calculHauteurSapin(hauteurObstacle);
-        // if(!avancer(0.6,1))
-        //   etat = StabiliserObjet;
-        /* code */
-        break;
-
-      case StabiliserObjet:
-        /* code */
+    case StabiliserObjet:
+      /* code */
       // pid_1.disable();
       // pid_2.setGoal(0);
-        break;
+      break;
 
-      case LacherObjet:
-        /* code */
-        controlServo(ANGLE_OPEN_SERVO);
-        break;
+    case LacherObjet:
+      /* code */
+      controlServo(ANGLE_OPEN_SERVO);
+      break;
 
-      case Retour:
-        /* code */
-        break;
-      case TunePid:
-        if (first_scan)
-        {
-          
-          first_scan = false;
-        }
+    case Retour:
+      /* code */
+      break;
+    case TunePid:
+      if (first_scan)
+      {
+
+        first_scan = false;
+      }
       // pid_1.run();
-        break;
+      break;
     }
   }
 }
@@ -392,7 +430,7 @@ void sendMsg()
   // Elements du message
   // PIDmeasurement_pendule();
   doc["time"] = millis();
-  doc["potVex"] = map(analogRead(POTPIN), 96,934,-95,85)+OFFSET_PENDULE;
+  doc["potVex"] = map(analogRead(POTPIN), 96, 934, -95, 85) + OFFSET_PENDULE;
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_1.getGoal();
   doc["measurements"] = PIDmeasurement_lineaire();
@@ -491,7 +529,7 @@ void readMsg()
 // Fonctions pour le PID
 double PIDmeasurement_lineaire()
 {
-  return -1*(0.14*32*PI*AX_.readEncoder(0))/(3200.0*24.0); // encoder 0
+  return -1 * (0.14 * 32 * PI * AX_.readEncoder(0)) / (3200.0 * 24.0); // encoder 0
 }
 
 double PIDmeasurement_pendule() // Trouver vitesse du pendule.
@@ -499,59 +537,58 @@ double PIDmeasurement_pendule() // Trouver vitesse du pendule.
   double timeNow = millis();
 
   double deltaTime = timeNow - lastTimePendule;
-  anglePendule = map(analogRead(POTPIN), 96,934,-95,85)+OFFSET_PENDULE;
+  anglePendule = map(analogRead(POTPIN), 96, 934, -95, 85) + OFFSET_PENDULE;
   double deltaValuePot = anglePendule - lastValuePot;
-  vitessePendule = (deltaValuePot*1000) / deltaTime;
+  vitessePendule = (deltaValuePot * 1000) / deltaTime;
   lastValuePot = anglePendule;
   return vitessePendule;
 }
 
-
 void PIDcommand_motor(double cmd)
 {
-  if(cmd > 1)
+  if (cmd > 1)
   {
     cmd = 1;
   }
-  else if(cmd < -1)
+  else if (cmd < -1)
   {
     cmd = -1;
   }
-  else if(cmd < 0.1 && cmd > 0)
+  else if (cmd < 0.1 && cmd > 0)
   {
     cmd = 0.1;
   }
-  else if(cmd > -0.1 && cmd < 0)
+  else if (cmd > -0.1 && cmd < 0)
   {
     cmd = -0.1;
   }
   //Serial.print("FUCK");
-  // Serial.print("cmd : ");
-  // Serial.print(cmd);
-  // Serial.print(" Goal : ");
-  // Serial.println(pid_1.getGoal());
+  Serial.print("cmd : ");
+  Serial.print(cmd);
+  Serial.print(" Goal : ");
+  Serial.println(pid_1.getGoal());
   AX_.setMotorPWM(0, -cmd);
 }
 
 void controlMoteur(float cmd)
 {
-  if(cmd > 1)
+  if (cmd > 1)
   {
     cmd = 1;
   }
-  else if(cmd < -1)
+  else if (cmd < -1)
   {
     cmd = -1;
   }
-  else if(cmd < 0.1 && cmd > 0)
+  else if (cmd < 0.1 && cmd > 0)
   {
     cmd = 0.1;
   }
-  else if(cmd > -0.1 && cmd < 0)
+  else if (cmd > -0.1 && cmd < 0)
   {
     cmd = -0.1;
   }
-  AX_.setMotorPWM(0,cmd);
+  AX_.setMotorPWM(0, cmd);
 }
 
 void PIDcommand_pendule(double cmd)
@@ -572,22 +609,28 @@ bool reculLimitSwitch()
 {
   // Set slow pid
   static bool setupRecul = 0;
-  if(setupRecul == 0)
+  if (setupRecul == 0)
   {
     // setPIDslow();
     // pid_1.setGoal(-1);
     // pid_1.enable();
-    AX_.setMotorPWM(0,0.2);
+    AX_.setMotorPWM(0, 0.2);
     setupRecul = 1;
   }
   // reculer
-  if(!digitalRead(LIMIT_SWITCH_PIN))
+  if (!digitalRead(LIMIT_SWITCH_PIN))
   {
+    delay(20);
+    if (!(digitalRead(LIMIT_SWITCH_PIN)))
+    {
+      controlMoteur(0);
+      setupRecul = 0;
+      distanceObstacle = -1 * (0.14 * 32 * PI * AX_.readResetEncoder(0)) / (3200.0 * 24.0);
+      distanceObstacle -= 0.06;
+      currentDistance = 0;
+    }
     // disableMotorPID();
     // PIDGoalReached = 0;
-    setupRecul = 0;
-    distanceObstacle = -1*(0.14*32*PI*AX_.readResetEncoder(0))/(3200.0*24.0);
-    currentDistance = 0;
     // reset compte de pulse
     return 0;
   }
@@ -597,25 +640,25 @@ bool reculLimitSwitch()
   // return
 }
 
-bool avancer(double distance,int pidSpeed)
+bool avancer(double distance, int pidSpeed)
 {
   static bool setupAvancer = 0;
-  if(setupAvancer == 0)
+  if (setupAvancer == 0)
   {
     PIDGoalReached = 0;
 
-    if(pidSpeed == 0)
+    if (pidSpeed == 0)
       setPIDslow();
-    else if(pidSpeed == 1)
+    else if (pidSpeed == 1)
       setPIDMed();
     else if (pidSpeed == 2)
       setPIDHigh();
-    
+
     pid_1.setGoal(distance);
     pid_1.enable();
     setupAvancer = 1;
   }
-  if(PIDGoalReached == 1)
+  if (PIDGoalReached == 1)
   {
     // Serial.println("Avancer fini");
     currentDistance += distance;
@@ -630,25 +673,25 @@ bool avancer(double distance,int pidSpeed)
 
 void setPIDslow(void)
 {
-  pid_1.setGains(0.5,0.03,0); // surtout kp plus bas.
+  pid_1.setGains(0.5, 0.03, 0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
 void setPIDMed(void)
 {
-  pid_1.setGains(1.5,0.02,0); // surtout kp plus bas.
+  pid_1.setGains(1.5, 0.02, 0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
 void setPIDHigh(void)
 {
-  pid_1.setGains(3,0.02,0); // surtout kp plus bas.
+  pid_1.setGains(3, 0.02, 0); // surtout kp plus bas.
   pid_1.setEpsilon(0.04);
 }
 
 void disableMotorPID()
 {
-  AX_.setMotorPWM(0,0);
+  AX_.setMotorPWM(0, 0);
   pid_1.disable();
   pid_1.setGoal(0);
   PIDGoalReached = 0;
@@ -661,22 +704,22 @@ void balancerPendule()
   // Serial.print("");
   double goalTest = 0;
   PIDGoalReached = 0;
-  if(vitessePendule > 0.05 && anglePendule > 15)
+  if (vitessePendule > 0.05 && anglePendule > 15)
   {
     // goalTest = currentDistance + (distanceOscillement/2);
     Serial.println("One side");
     goalTest = currentDistance + (distanceOscillement);
     pid_1.setGoal(goalTest);
-    AX_.setMotorPWM(0,0.4);
+    AX_.setMotorPWM(0, 0.4);
     // currentDistance -= distanceOscillement;   // Verifier que qu'il revient a la bonne place
   }
-  else if(vitessePendule < -0.05 && anglePendule < -15)
+  else if (vitessePendule < -0.05 && anglePendule < -15)
   {
     Serial.println("Other side");
     goalTest = currentDistance;
     // goalTest = currentDistance - (distanceOscillement/2.0);
     pid_1.setGoal(goalTest);
-    AX_.setMotorPWM(0,-0.4);
+    AX_.setMotorPWM(0, -0.4);
     // currentDistance += distanceOscillement;
   }
   // Serial.print("vitesse pendule : ");
@@ -684,9 +727,9 @@ void balancerPendule()
   Serial.print(" Gaol test = ");
   Serial.println(goalTest);
 
-  compteurBalance ++;
+  compteurBalance++;
   //pid_1.enable();
-  if(compteurBalance >= NOMBRE_DE_COUP_PENDULE)
+  if (compteurBalance >= NOMBRE_DE_COUP_PENDULE)
   {
     //Serial.println("fini de compter fok");
     //etat = TraverserObstacle;
@@ -701,26 +744,26 @@ void balancerPendule2()
   static int changeDeBord = 0;
   PIDGoalReached = 0;
   double goalTest = 0;
-  if(changeDeBord & 0x01)
+  if (changeDeBord & 0x01)
   {
-    if(anglePendule > 0)
+    if (anglePendule > 0)
     {
-      goalTest = currentDistance + (distanceOscillement/2);
+      goalTest = currentDistance + (distanceOscillement / 2);
       pid_1.setGoal(goalTest);
-      compteurBalance ++;
-      anglePendule ++;
-      changeDeBord ++;
+      compteurBalance++;
+      anglePendule++;
+      changeDeBord++;
     }
   }
   else
   {
-    if(anglePendule <= 0)
+    if (anglePendule <= 0)
     {
-      goalTest = currentDistance - (distanceOscillement/2);
+      goalTest = currentDistance - (distanceOscillement / 2);
       pid_1.setGoal(goalTest);
-      compteurBalance ++;
-      anglePendule ++;
-      changeDeBord ++;
+      compteurBalance++;
+      anglePendule++;
+      changeDeBord++;
     }
   }
 
@@ -728,10 +771,10 @@ void balancerPendule2()
   Serial.print(anglePendule);
   Serial.print(" Gaol test = ");
   Serial.println(goalTest);
-  
+
   //pid_1.enable();
 
-  if(compteurBalance >= NOMBRE_DE_COUP_PENDULE)
+  if (compteurBalance >= NOMBRE_DE_COUP_PENDULE)
   {
     Serial.println("fini de compter fok");
     etat = TraverserObstacle;
@@ -745,12 +788,12 @@ void balancerPendule3()
 {
   static double compteurSin = 0;
   compteurSin += 0.5;
-  penduleSinMoteur = 0.4*sin(compteurSin);
+  penduleSinMoteur = 0.4 * sin(compteurSin);
   // Serial.print("Compteur Sin : ");
   // Serial.print(compteurSin);
-  // Serial.print("  Pendule Goal : ");
-  // Serial.println(penduleSinMoteur);
-  AX_.setMotorPWM(0,penduleSinMoteur);
+  Serial.print("  Pendule SIN : ");
+  Serial.println(penduleSinMoteur);
+  AX_.setMotorPWM(0, penduleSinMoteur);
 }
 
 bool calculHauteurSapin(float hauteurApasser)
@@ -758,13 +801,13 @@ bool calculHauteurSapin(float hauteurApasser)
   // Serial.print("Angle : ");
   // Serial.print(anglePendule);
   Serial.print("  Hauteur du sapin : ");
-  Serial.println(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
- // double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
-
-  angleNesessaire = (acos((hauteurApasser+ toleranceHauteurSapin)/LONGUEUR_PENDULE)* 1000 / 57296);
-
-
-  if(anglePendule >= angleNesessaire)
+  Serial.print(LONGUEUR_PENDULE - LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296));
+  // double hauteurSapin = (LONGUEUR_PENDULE - (LONGUEUR_PENDULE * cos(anglePendule * 1000 / 57296))) + toleranceHauteurSapin;
+  angleNesessaire = acos(((LONGUEUR_PENDULE - (hauteurApasser + toleranceHauteurSapin)) / LONGUEUR_PENDULE));
+  angleNesessaire = angleNesessaire * 57296 / 1000;
+  Serial.print("  Angle necessaire : ");
+  Serial.println(angleNesessaire);
+  if (anglePendule >= angleNesessaire)
   {
     return 0;
   }
@@ -773,8 +816,8 @@ bool calculHauteurSapin(float hauteurApasser)
 
 void consommationEnergetique()
 {
-  wattHeure = AX_.getVoltage() * (AX_.getCurrent()/1000) * 1; // V * I * 1h
-  consommationWatt += wattHeure * (100/36); // wattHeure * 100ms/1000 
+  wattHeure = AX_.getVoltage() * (AX_.getCurrent() / 1000) * 1; // V * I * 1h
+  consommationWatt += wattHeure * (100 / 36);                   // wattHeure * 100ms/1000
   // afficherEnergie();
 }
 
@@ -793,7 +836,9 @@ void afficherEnergie()
 void controlServo(int angle)
 {
   servo_.attach(8);
-  if(angle < 180 && angle > 0)
-    servo_.write(angle);
-  servo_.detach();
+  if (angle < 180 && angle > 0)
+  {
+  }
+  // servo_.write(angle);
+  // servo_.detach();
 }
