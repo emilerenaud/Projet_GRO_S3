@@ -471,7 +471,7 @@ void sendMsg()
   doc["measurements"] = PIDmeasurement_lineaire();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent();
-  doc["Wattheure"] = wattHeure;
+  doc["Wattheure"] = consommationWatt;
   doc["hauteurObstacle"] = hauteurObstacle;
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
@@ -863,7 +863,7 @@ bool calculHauteurSapin(float hauteurApasser)
 void consommationEnergetique()
 {
   wattHeure = AX_.getVoltage() * (AX_.getCurrent() / 1000) * 1; // V * I * 1h
-  consommationWatt += wattHeure * (100 / 36);                   // wattHeure * 100ms/1000
+  consommationWatt += wattHeure * 360000.0;                // wattHeure * 100ms/1000
   // afficherEnergie();
 }
 
